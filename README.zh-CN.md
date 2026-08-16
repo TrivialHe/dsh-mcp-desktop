@@ -33,16 +33,18 @@ Code 的做法，是让旗舰模型亲自啃完每个文件：一个文件一次
 交给一个全新的 DeepSeek Harness agent——它就在你的 workspace 里干活。所有文件
 读写都在那里完成：批量、本地、便宜。父代理只管拿主意：**规划、诊断、决策、验证**。
 
-20 个 SWE-bench 风格长难任务的实测（同父模型、双对照组）：
+100 个 SWE-bench 风格长难任务的实测（异构模型：父 = deepseek-v4-pro，
+DSH = deepseek-v4-flash；B 组用同一个父模型但不装插件）：
 
 | | 有 `dsh-mcp` | 裸 agent |
 |---|---|---|
-| **正确率** | **20/20 · 100%** | 17/20 · 85% |
-| **平均耗时** | **77s** | 107s |
-| **多文件调查类** | **43–83s** | 最高 **350s** |
+| **正确率** | **100/100 · 100%** | 89/100 · 89% |
+| **平均耗时** | **76s** | 120s |
+| **统计显著性** | — | Fisher p < 0.001 |
 
-更快、更准，而且最烧钱的读取动作，不再占用旗舰模型。
-[完整报告](#benchmark-报告) · [自己复现](#benchmark-报告)
+更快、更准——而且正确率差距现在是**统计显著**的（n=100 时 p = 3.7×10⁻⁴，
+不再只是方向性结论）。最烧钱的读取动作，不再占用旗舰模型。
+[完整报告](tests/bench/bench-report.md) · [自己复现](#benchmark-报告)
 
 ## 工作原理
 
@@ -98,54 +100,43 @@ Claude Code 启动时才加载 MCP 服务器，所以在任意项目目录里重
 
 ## Benchmark 报告
 
-> 20 个长难多文件任务（bug 修复、重构、迁移、按 spec 实现、测试驱动、审计）·
-> 自动化 ground-truth 验证（运行断言 + stdout 检查）· 双组同父模型
+> 100 个长难多文件任务、分两批（01–50：bug 修复、重构、迁移、按 spec 实现、
+> 测试驱动、审计；51–100：加难——深层数据流、异步竞态、状态机、解析器、
+> 缓存、跨进程状态）· 自动化 ground-truth 验证（运行断言 + stdout 检查；
+> 干净 fixture 必 FAIL、参考修复必 PASS）· 异构模型：双组父 = deepseek-v4-pro、
+> A 组 DSH = deepseek-v4-flash
 > · 完整明细：[`tests/bench/bench-report.md`](tests/bench/bench-report.md)
 > · 任务集：[`tests/bench/tasks.mjs`](tests/bench/tasks.mjs)
 
-| 任务 | 有 dsh-mcp | 裸 agent |
+| | 有 `dsh-mcp` | 裸 agent |
 |---|---|---|
-| 01 重命名导出（更新全部引用） | ✅ 120s | ✅ 47s |
-| 02 级联 bug（3 层数据流丢字段） | ✅ **55s** | ❌ 158s |
-| 03 按 spec 实现 | ✅ 42s | ✅ 42s |
-| 04 迁移 util（更新 3 处调用方） | ✅ **60s** | ✅ 300s |
-| 05 批量修复 5 个文件 | ✅ **67s** | ✅ 155s |
-| 06 CJS → ESM 迁移 | ✅ 34s | ✅ 51s |
-| 07 null 防护修复 | ✅ 54s | ✅ 71s |
-| 08 按 spec 实现 checksum | ✅ 28s | ✅ 48s |
-| 09 数据流（3 层找根因） | ✅ **43s** | ✅ 350s |
-| 10 提取共享模块 | ✅ 282s | ✅ 76s |
-| 11 异步边界修复 | ✅ 52s | ✅ 55s |
-| 12 越界防护 | ✅ 64s | ✅ 67s |
-| 13 配置键迁移 ×2 | ✅ 92s | ✅ 67s |
-| 14 undefined 防护修复 | ✅ **83s** | ✅ 287s |
-| 15 字符串拼接顺序 | ✅ **23s** | ❌ 67s |
-| 16 循环 require | ✅ **228s** | ❌ 53s |
-| 17 修复失败测试套件 | ✅ 49s | ✅ 50s |
-| 18 单位换算 | ✅ 68s | ✅ 77s |
-| 19 日志审计（3 个入口） | ✅ 77s | ✅ 86s |
-| 20 排序比较器方向 | ✅ 29s | ✅ 32s |
+| **正确率** | **100/100 · 100%** | 89/100 · 89% |
+| **平均耗时** | **76.5s** | 120.2s |
+| **总耗时** | 7647s | 12019s |
+| **失败任务** | 0 | 11 |
 
 **数字背后**
 
-- **多文件调查类任务：快 3–8 倍。** 一次委派打包"读 N 个文件 + 分析"
-  （09: 43s vs 350s）。裸 agent 逐文件 Read，长会话中丢失早期上下文。
-- **裸 agent 的 3 个失败，全栽在精细活上** —— 跨三个模块丢字段、一行拼接
-  顺序、以及经典的 Node 循环 require `module.exports` 引用替换陷阱。有 dsh-mcp
-  的一组全都拿下了。
-- **说几个例外** —— 提取共享模块（10）走 DSH 反而更慢（多文件改写来回折腾）；
-  16 号裸组"快"，只是因为修错了就放弃。
-- **简单单点任务两组打平**（裸组略快；每次委派有进程启动开销）。
-
-**限制** —— n=20、单模型、小型仓库、裸组为 headless 权限模式。正确率差距方向
-一致，但在此样本量下不构成统计显著。
+- **裸 agent 的 11 个失败，全是"修了一半"**。5 个是跨文件活（重命名、日志
+  迁移、拆分 util）：改了引用忘了删旧文件、迁移了 3/5 个文件就收工；5 个是
+  单点活：两个 bug 只修一个、5 个 HTML 字符只转义 3 个、只去重没排序。DSH
+  在委派内部会跑验证再交付，把"漏了尾巴"拦住了。
+- **多文件调查类依然是大头优势**——一次委派打包"读 N 个文件 + 分析"，
+  裸 agent 逐文件 Read 会丢早期上下文。
+- **现在统计显著了。** 正确率 100% vs 89%（n=100）的 Fisher 精确检验
+  p = 3.7×10⁻⁴（< 0.001）。20 题试点时只是方向性结论，100 题差距坐实。
+- **加难题（51–100）反而更体现插件价值**——A 组两批都 100%、加难题平均
+  65s；B 组 88% → 90% 但累计 11 个失败一个没少。
+- **说个例外** —— 提取共享模块（10）走 DSH 反而更慢（多文件改写往返多），
+  加难题里没有重现。
 
 复现：
 
 ```powershell
-DEEPSEEK_API_KEY=sk-... node tests\bench\run-bench.mjs        # 双组 20 任务
-DEEPSEEK_API_KEY=sk-... node tests\e2e-headless.mjs           # 真实 E2E（A/B/C/D）
-DEEPSEEK_API_KEY=sk-... node tests\long-horizon-e2e.mjs       # 多轮委派闭环
+DEEPSEEK_API_KEY=sk-... node tests\bench\run-bench.mjs AB 01-50     # 双组 100 任务
+DEEPSEEK_API_KEY=sk-... node tests\bench\run-bench.mjs AB 51-100    # （范围过滤）
+DEEPSEEK_API_KEY=sk-... node tests\e2e-headless.mjs                 # 真实 E2E（A/B/C/D）
+DEEPSEEK_API_KEY=sk-... node tests\long-horizon-e2e.mjs             # 多轮委派闭环
 ```
 
 > key 只进入沙箱内的临时 `mcp.json`，退出即删——绝不写入仓库、绝不打印。
@@ -295,9 +286,11 @@ DSH:  找到了：src/auth/session.js:37 捕获错误后返回 null 而没有重
 
 ## 成本模型
 
-本项目全部开发与验证都跑在 **deepseek-v4-flash** 上——父代理与 DSH 皆是。
-架构就是重点：父代理每轮 token 消耗保持极小（纯推理），token 密集的工作在
-DSH 侧按 DeepSeek 计价完成。
+早期开发在 **deepseek-v4-flash** 上完成（父代理与 DSH 皆是）；上面的 100 题
+benchmark 跑的是异构组合 **父 = deepseek-v4-pro[1m]、DSH = deepseek-v4-flash**
+（B 组用同一个 pro 父模型但不装插件，所以差距就是插件本身）。架构就是重点：
+父代理每轮 token 消耗保持极小（纯推理），token 密集的工作在 DSH 侧按
+DeepSeek 计价完成。
 
 这正是把父代理换成旗舰模型（如 Claude Fable 5 / Sonnet 5）后依然**更快、更省钱**
 的原因：
@@ -318,7 +311,7 @@ benchmark 复测即可验证。*
 | 单元测试 | 23 个 vitest（DSH 发现 / workspace / runner） | ✅ |
 | 真实 E2E（Claude Code） | 子目录启动 · 中文 · 路径含空格 · 真实 API | ✅ |
 | 长程任务 | 规划 → 调查 → 诊断 → 修复 → 读回 → 验证 | ✅ 5/5 |
-| A/B benchmark | 20 任务 × 2 组（正确率 + runtime） | ✅ |
+| A/B benchmark | 100 任务 × 2 组（正确率 + runtime，p<0.001） | ✅ |
 | DSH 写权限探针 | headless profile 可写文件 | ✅ |
 
 ## 设计与限制（V0.x）

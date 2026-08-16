@@ -1,451 +1,451 @@
 [
   {
     "mode": "A:with-dsh-mcp",
-    "task": "02-cascade-bug",
+    "task": "54-pagination",
     "pass": true,
-    "seconds": 47.8,
-    "detail": "输出含 50 USD: 50 USD",
+    "seconds": 40.9,
+    "detail": "页码从 1 起正确",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "03-implement-spec",
+    "task": "51-deep-trace",
     "pass": true,
-    "seconds": 48.3,
-    "detail": "JSON 完全匹配",
+    "seconds": 51.9,
+    "detail": "4 层数据流完整",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "05-fix-todos",
+    "task": "52-cross-module-consistency",
     "pass": true,
-    "seconds": 53.8,
-    "detail": "5 个值全部正确",
+    "seconds": 53.9,
+    "detail": "两处与 config 一致",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "04-move-util",
+    "task": "53-async-race",
     "pass": true,
-    "seconds": 90.3,
-    "detail": "3 个脚本全部输出正确",
+    "seconds": 65.2,
+    "detail": "结果顺序与任务顺序一致",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "06-cjs-to-esm",
+    "task": "55-state-machine",
     "pass": true,
-    "seconds": 64.3,
-    "detail": "ESM 化完成，输出 HELLO WORLD",
+    "seconds": 71.3,
+    "detail": "状态机全部转移正确",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "08-missing-function",
+    "task": "57-cache-invalidation",
     "pass": true,
-    "seconds": 60.7,
-    "detail": "输出 85",
+    "seconds": 51.6,
+    "detail": "缓存正确失效",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "07-type-fix",
+    "task": "58-drain-once",
     "pass": true,
-    "seconds": 99.8,
-    "detail": "3 行输出正确且无崩溃",
+    "seconds": 52.7,
+    "detail": "drain 后队列清空",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "09-data-flow",
+    "task": "60-ini-parser",
     "pass": true,
-    "seconds": 64.9,
-    "detail": "fetch(2) 返回 Bob",
+    "seconds": 64.7,
+    "detail": "INI 解析正确",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "11-async-fix",
+    "task": "61-index-offset",
     "pass": true,
-    "seconds": 71.2,
-    "detail": "输出 v = 42",
+    "seconds": 38.9,
+    "detail": "索引偏移已修正",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "12-boundary-check",
+    "task": "59-throttle",
     "pass": true,
-    "seconds": 53.7,
-    "detail": "越界返回 out-of-range",
+    "seconds": 83.5,
+    "detail": "节流区间内丢弃调用",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "01-rename-export",
+    "task": "63-fallback-chain",
     "pass": true,
-    "seconds": 220.8,
-    "detail": "输出 total: 30 / order: 30",
+    "seconds": 44.4,
+    "detail": "回退链生效",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "13-config-mapping",
+    "task": "62-deep-merge-arrays",
     "pass": true,
-    "seconds": 70.9,
-    "detail": "两处旧键已修复",
+    "seconds": 84.1,
+    "detail": "数组整体替换且新键不丢",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "14-error-handling",
+    "task": "65-constant-drift",
     "pass": true,
-    "seconds": 53.1,
-    "detail": "正常输出且无崩溃",
+    "seconds": 42.8,
+    "detail": "与共享常量一致",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "15-string-format",
+    "task": "64-null-propagation",
     "pass": true,
-    "seconds": 91.5,
-    "detail": "拼接顺序正确",
+    "seconds": 68.7,
+    "detail": "空输入优雅降级",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "17-fix-failing-test",
+    "task": "56-csv-parser",
     "pass": true,
-    "seconds": 72.1,
-    "detail": "测试全绿",
+    "seconds": 177.6,
+    "detail": "引号/逗号/转义全部正确",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "18-metric-conversion",
+    "task": "68-bidirectional-map",
     "pass": true,
-    "seconds": 85.3,
-    "detail": "输出 1 KiB",
+    "seconds": 45.3,
+    "detail": "双向映射一致",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "20-sort-order",
+    "task": "66-proxy-forward",
     "pass": true,
-    "seconds": 44.3,
-    "detail": "降序正确",
+    "seconds": 60.3,
+    "detail": "字段完整透传",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "22-shared-state",
+    "task": "69-metric-aggregation",
     "pass": true,
-    "seconds": 41.2,
-    "detail": "键值存储方向正确",
+    "seconds": 45.5,
+    "detail": "分组平均值正确",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "19-logging-audit",
+    "task": "67-init-order",
     "pass": true,
-    "seconds": 95.4,
-    "detail": "3 个入口函数均有日志注释",
+    "seconds": 66.5,
+    "detail": "初始化顺序正确",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "16-import-cycle",
+    "task": "70-legacy-compat",
     "pass": true,
-    "seconds": 177.7,
-    "detail": "循环依赖已修复",
+    "seconds": 86.1,
+    "detail": "兼容层参数补齐",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "10-dedupe-refactor",
+    "task": "72-path-normalize",
     "pass": true,
-    "seconds": 292.8,
-    "detail": "3 处调用共享模块，输出正确",
+    "seconds": 69.6,
+    "detail": "前导 ../ 全部清理",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "21-deep-copy",
+    "task": "71-sort-stability",
     "pass": true,
-    "seconds": 103.9,
-    "detail": "深拷贝且互不影响",
+    "seconds": 76.3,
+    "detail": "同分保持原顺序",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "25-test-driven",
+    "task": "74-token-redact",
     "pass": true,
-    "seconds": 59.8,
-    "detail": "3 个断言全部通过",
+    "seconds": 58.3,
+    "detail": "secret 已脱敏",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "24-implement-queue",
-    "pass": true,
-    "seconds": 74.4,
-    "detail": "FIFO 行为正确",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "23-rename-module",
-    "pass": true,
-    "seconds": 91.9,
-    "detail": "4 个调用方全部迁移完成",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "29-threshold",
-    "pass": true,
-    "seconds": 31.8,
-    "detail": "边界判断正确",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "26-validate-user",
-    "pass": true,
-    "seconds": 100.1,
-    "detail": "3 个用例校验正确",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "28-flatten",
-    "pass": true,
-    "seconds": 58.1,
-    "detail": "展平正确",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "30-simple-hash",
-    "pass": true,
-    "seconds": 71.2,
-    "detail": "哈希值与 spec 一致",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "27-log-migration",
-    "pass": true,
-    "seconds": 129.9,
-    "detail": "5 处日志全部迁移",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "32-async-order",
-    "pass": true,
-    "seconds": 53.1,
-    "detail": "顺序正确 AB",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "33-off-by-one",
-    "pass": true,
-    "seconds": 50.6,
-    "detail": "边界包含 n",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "34-merge-config",
-    "pass": true,
-    "seconds": 76.8,
-    "detail": "深合并正确",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "35-error-propagation",
-    "pass": true,
-    "seconds": 70.9,
-    "detail": "错误正确传播",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "36-double-encoding",
-    "pass": true,
-    "seconds": 78.1,
-    "detail": "单次编码正确",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "31-extract-text-utils",
-    "pass": true,
-    "seconds": 165.5,
-    "detail": "两处已提取到共享模块",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "38-priority-order",
-    "pass": true,
-    "seconds": 52.5,
-    "detail": "先注册先执行",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "37-dir-walk",
-    "pass": true,
-    "seconds": 126.3,
-    "detail": "3 个文件按字典序列出",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "41-memoize",
-    "pass": true,
-    "seconds": 57.5,
-    "detail": "缓存命中正确",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "40-priority-compare",
-    "pass": true,
-    "seconds": 85.3,
-    "detail": "按优先级降序",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "43-sort-keys",
-    "pass": true,
-    "seconds": 48.3,
-    "detail": "键名升序",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "45-money-precision",
-    "pass": true,
-    "seconds": 47.9,
-    "detail": "金额精确到分",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "42-dry-run",
-    "pass": true,
-    "seconds": 99.4,
-    "detail": "dryRun 模式不修改 plan",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "39-split-util",
-    "pass": true,
-    "seconds": 151.8,
-    "detail": "3 个职责文件拆分完成",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "44-retry",
-    "pass": true,
-    "seconds": 72,
-    "detail": "重试 3 次成功",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "48-empty-input",
-    "pass": true,
-    "seconds": 41,
-    "detail": "空数组返回 0",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "47-cron-minutes",
-    "pass": true,
-    "seconds": 68,
-    "detail": "3 种 cron 表达式解析正确",
-    "claudeExit": 0,
-    "timedOut": false
-  },
-  {
-    "mode": "A:with-dsh-mcp",
-    "task": "49-state-leak",
+    "task": "73-id-gen-race",
     "pass": true,
     "seconds": 79.3,
-    "detail": "实例间计数隔离",
+    "detail": "并发 ID 不重复",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "46-inject-deps",
+    "task": "76-percent-round",
     "pass": true,
-    "seconds": 133.3,
-    "detail": "依赖已注入且输出正确",
+    "seconds": 27.4,
+    "detail": "四舍五入正确",
     "claudeExit": 0,
     "timedOut": false
   },
   {
     "mode": "A:with-dsh-mcp",
-    "task": "50-multi-bug",
+    "task": "77-batch-tail",
     "pass": true,
-    "seconds": 207.9,
-    "detail": "3 个 bug 全部修复",
+    "seconds": 46.3,
+    "detail": "余数批次保留",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "75-feature-flag",
+    "pass": true,
+    "seconds": 63.9,
+    "detail": "运行时读取最新开关",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "78-singleton-bypass",
+    "pass": true,
+    "seconds": 60.2,
+    "detail": "单例复用",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "81-lru-cache",
+    "pass": true,
+    "seconds": 43.7,
+    "detail": "LRU 驱逐正确",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "80-validate-order",
+    "pass": true,
+    "seconds": 69.7,
+    "detail": "嵌套校验 4 用例正确",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "82-round-robin",
+    "pass": true,
+    "seconds": 48.5,
+    "detail": "轮转覆盖全部节点",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "79-tdd-multi",
+    "pass": true,
+    "seconds": 94.8,
+    "detail": "跨 3 模块 5 断言全绿",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "84-api-v2-migration",
+    "pass": true,
+    "seconds": 58.8,
+    "detail": "3 处调用方全部迁移",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "83-dir-sync",
+    "pass": true,
+    "seconds": 91.7,
+    "detail": "目录树复制完整",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "86-decode-multi",
+    "pass": true,
+    "seconds": 63,
+    "detail": "双重编码正确还原",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "87-schema-migration",
+    "pass": true,
+    "seconds": 56.4,
+    "detail": "email 提升且 contact 精简",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "88-threshold-chain",
+    "pass": true,
+    "seconds": 45.7,
+    "detail": "四档阈值正确",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "85-null-guard-multi",
+    "pass": true,
+    "seconds": 105.4,
+    "detail": "3 个入口空输入防御",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "91-chain-call",
+    "pass": true,
+    "seconds": 45,
+    "detail": "实例隔离",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "89-deep-equal",
+    "pass": true,
+    "seconds": 72.1,
+    "detail": "深度比较 5 用例正确",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "93-offset-rewrite",
+    "pass": true,
+    "seconds": 36,
+    "detail": "1 起行号正确",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "90-escape-html",
+    "pass": true,
+    "seconds": 69.3,
+    "detail": "5 个字符全部转义",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "92-duplicate-keys",
+    "pass": true,
+    "seconds": 48,
+    "detail": "同 id 字段合并",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "98-dedupe-sort",
+    "pass": true,
+    "seconds": 37.6,
+    "detail": "去重且升序",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "96-escape-regex",
+    "pass": true,
+    "seconds": 50,
+    "detail": "字面匹配",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "97-config-freeze",
+    "pass": true,
+    "seconds": 53,
+    "detail": "配置只读",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "95-expiry-cache",
+    "pass": true,
+    "seconds": 78.5,
+    "detail": "过期边界正确",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "94-dry-run-deep",
+    "pass": true,
+    "seconds": 89,
+    "detail": "dryRun 下零副作用",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "100-multi-refactor-bug",
+    "pass": true,
+    "seconds": 72.4,
+    "detail": "两个 bug 修复、正常函数不受影响",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "A:with-dsh-mcp",
+    "task": "99-counter-shared",
+    "pass": true,
+    "seconds": 154.6,
+    "detail": "两文件各自从 1 开始",
     "claudeExit": 0,
     "timedOut": false
   }

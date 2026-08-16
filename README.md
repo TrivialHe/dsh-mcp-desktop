@@ -36,16 +36,20 @@ a fresh, focused DeepSeek Harness agent running inside your workspace. All the
 file I/O happens there — batched, local, cheap. The parent stays in the loop
 for what actually needs a brain: **planning, diagnosis, decisions, verification**.
 
-Measured on 20 SWE-bench-style long-horizon tasks (same parent model, both arms):
+Measured on 100 SWE-bench-style long-horizon tasks (heterogeneous model setup:
+parent = deepseek-v4-pro, DSH = deepseek-v4-flash; arm B runs the same parent
+model without the plugin):
 
 | | with `dsh-mcp` | raw agent |
 |---|---|---|
-| **Accuracy** | **20/20 · 100%** | 17/20 · 85% |
-| **Avg. wall time** | **77s** | 107s |
-| **Multi-file investigation** | **43–83s** | up to **350s** |
+| **Accuracy** | **100/100 · 100%** | 89/100 · 89% |
+| **Avg. wall time** | **76s** | 120s |
+| **Statistical significance** | — | Fisher p < 0.001 |
 
-Faster, more accurate, and the expensive reads moved off the flagship model.
-[Full report](#benchmark) · [Reproduce it](#benchmark)
+Faster, more accurate — and the accuracy gap is now statistically significant
+(p = 3.7×10⁻⁴ at n=100), not just directional. The expensive reads moved off
+the flagship model. [Full report](tests/bench/bench-report.md) ·
+[Reproduce it](#benchmark)
 
 ## How it works
 
@@ -104,59 +108,50 @@ seconds. DSH runs in **your** project root — never in the `dsh-mcp` directory.
 
 ## Benchmark
 
-> 20 long-horizon, multi-file tasks (bug fixes, refactors, migrations,
-> implement-from-spec, test-driven, audit) · automated ground-truth verification
-> (run assertions + stdout checks) · same parent model on both arms
-> · full breakdown: [`tests/bench/bench-report.md`](tests/bench/bench-report.md)
+> 100 long-horizon, multi-file tasks in two batches (01–50: bug fixes,
+> refactors, migrations, implement-from-spec, test-driven, audit; 51–100:
+> harder — deep data flows, async races, state machines, parsers, caches,
+> cross-process state) · automated ground-truth verification (run assertions +
+> stdout checks; clean fixtures must fail, reference fixes must pass)
+> · heterogeneous model setup: parent = deepseek-v4-pro on both arms, DSH =
+> deepseek-v4-flash on arm A · full breakdown:
+> [`tests/bench/bench-report.md`](tests/bench/bench-report.md)
 > · dataset: [`tests/bench/tasks.mjs`](tests/bench/tasks.mjs)
 
-| Task | with dsh-mcp | raw agent |
+| | with `dsh-mcp` | raw agent |
 |---|---|---|
-| 01 rename-export (update all references) | ✅ 120s | ✅ 47s |
-| 02 cascade-bug (3-layer data flow, lost field) | ✅ **55s** | ❌ 158s |
-| 03 implement-from-spec | ✅ 42s | ✅ 42s |
-| 04 move-util (migrate + update 3 callers) | ✅ **60s** | ✅ 300s |
-| 05 fix-todos (5 files, batch) | ✅ **67s** | ✅ 155s |
-| 06 CJS → ESM migration | ✅ 34s | ✅ 51s |
-| 07 null-guard fix | ✅ 54s | ✅ 71s |
-| 08 implement checksum per spec | ✅ 28s | ✅ 48s |
-| 09 data-flow (3-layer root cause) | ✅ **43s** | ✅ 350s |
-| 10 dedupe → shared module | ✅ 282s | ✅ 76s |
-| 11 async boundary fix | ✅ 52s | ✅ 55s |
-| 12 out-of-range guard | ✅ 64s | ✅ 67s |
-| 13 config key migration ×2 | ✅ 92s | ✅ 67s |
-| 14 undefined-guard fix | ✅ **83s** | ✅ 287s |
-| 15 string concat order | ✅ **23s** | ❌ 67s |
-| 16 circular require | ✅ **228s** | ❌ 53s |
-| 17 fix failing test suite | ✅ 49s | ✅ 50s |
-| 18 unit conversion | ✅ 68s | ✅ 77s |
-| 19 logging audit (3 entries) | ✅ 77s | ✅ 86s |
-| 20 sort comparator direction | ✅ 29s | ✅ 32s |
+| **Accuracy** | **100/100 · 100%** | 89/100 · 89% |
+| **Avg. wall time** | **76.5s** | 120.2s |
+| **Total wall time** | 7647s | 12019s |
+| **Failures** | 0 | 11 |
 
 **What the numbers say**
 
-- **Multi-file investigation tasks: 3–8× faster.** One delegation batches "read
-  N files + analyze" (09: 43s vs 350s). A raw agent reads file by file and loses
-  early context in long sessions.
-- **All 3 raw-agent failures are precision tasks** — a lost field across three
-  modules, a one-line concat bug, and the classic Node circular-require
-  `module.exports` swap trap. The dsh-mcp arm solved all of them.
-- **Honest exceptions** — a shared-module extraction (10) is slower through DSH
-  (multi-file rewrite round-trips); 16's raw arm was "fast" only because it gave
-  up early with the wrong fix.
-- **Simple single-point tasks** are a wash (raw arm slightly faster; every
-  delegation pays a process-spawn cost).
-
-**Limitations** — n=20, single model, small repos, headless permission mode for
-the raw arm. The accuracy gap is directional, not statistically significant at
-this n.
+- **Every raw-agent failure is a "finished half" failure.** 5 of 11 are
+  cross-file jobs (renames, log migrations, util splits) where the raw agent
+  changed references but left the old file behind, or migrated 3 of 5 files;
+  5 are single-point jobs where it fixed one bug out of two, escaped 3 of 5
+  HTML chars, deduped but didn't sort. DSH verifies inside the delegation and
+  catches the leftovers before handing back.
+- **Multi-file investigation stays the biggest win** — batch "read N files +
+  analyze" in one delegation vs. file-by-file reads that lose early context.
+- **Statistically significant now.** Fisher exact test on accuracy
+  (100% vs 89%, n=100): p = 3.7×10⁻⁴ (< 0.001). The 20-task pilot was
+  directional only; at 100 tasks the gap is real.
+- **The harder batch (51–100) makes the plugin look better, not worse** —
+  arm A: 100% in both batches, avg 65s on the hard batch; arm B: 88% → 90%
+  but still leaves 11 failures overall.
+- **Honest exception** — one shared-module extraction (10) was slower through
+  DSH (multi-file rewrite round-trips). Nothing like it reappeared in the hard
+  batch.
 
 Reproduce:
 
 ```powershell
-DEEPSEEK_API_KEY=sk-... node tests\bench\run-bench.mjs        # both arms, 20 tasks
-DEEPSEEK_API_KEY=sk-... node tests\e2e-headless.mjs           # real E2E (A/B/C/D)
-DEEPSEEK_API_KEY=sk-... node tests\long-horizon-e2e.mjs       # multi-delegation loop
+DEEPSEEK_API_KEY=sk-... node tests\bench\run-bench.mjs AB 01-50     # both arms, 100 tasks
+DEEPSEEK_API_KEY=sk-... node tests\bench\run-bench.mjs AB 51-100    # (range filter)
+DEEPSEEK_API_KEY=sk-... node tests\e2e-headless.mjs                 # real E2E (A/B/C/D)
+DEEPSEEK_API_KEY=sk-... node tests\long-horizon-e2e.mjs             # multi-delegation loop
 ```
 
 > Keys only ever enter a temp `mcp.json` inside a sandbox, deleted on exit —
@@ -315,10 +310,12 @@ DSH:   Found it: src/auth/session.js:37 catches the error and returns null
 
 ## Cost model
 
-Everything here was developed and verified on **deepseek-v4-flash** — parent and
-DSH alike. The architecture is the point: the parent's per-turn token spend
-stays tiny (pure reasoning), while token-heavy work runs on the DSH side at
-DeepSeek pricing.
+Early development ran on **deepseek-v4-flash** for parent and DSH alike; the
+100-task benchmark above runs the heterogeneous combo **parent =
+deepseek-v4-pro[1m], DSH = deepseek-v4-flash** (arm B uses the same pro parent
+without the plugin, so the delta is the plugin). The architecture is the point:
+the parent's per-turn token spend stays tiny (pure reasoning), while
+token-heavy work runs on the DSH side at DeepSeek pricing.
 
 This is what makes a flagship parent (e.g. Claude Fable 5 / Sonnet 5) both
 **faster and cheaper** when combined with dsh-mcp:
@@ -341,7 +338,7 @@ parent and re-run the same suite to verify.*
 | Unit | 23 vitest (DSH discovery / workspace / runner) | ✅ |
 | Real E2E (Claude Code) | subdir launch · Chinese · spaces in path · real API | ✅ |
 | Long-horizon | plan → investigate → decide → fix → read-back → verify | ✅ 5/5 |
-| A/B benchmark | 20 tasks × 2 arms (accuracy + runtime) | ✅ |
+| A/B benchmark | 100 tasks × 2 arms (accuracy + runtime, p<0.001) | ✅ |
 | DSH write probe | headless profile can write files | ✅ |
 
 ## Design & limitations (V0.x)

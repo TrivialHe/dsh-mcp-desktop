@@ -1,0 +1,109 @@
+
+========== Arm A:with-dsh-mcp (50 tasks, concurrency 5) ==========
+PASS  [A:with-dsh-mcp] 54-pagination  40.9s  页码从 1 起正确
+PASS  [A:with-dsh-mcp] 51-deep-trace  51.9s  4 层数据流完整
+PASS  [A:with-dsh-mcp] 52-cross-module-consistency  53.9s  两处与 config 一致
+PASS  [A:with-dsh-mcp] 53-async-race  65.2s  结果顺序与任务顺序一致
+PASS  [A:with-dsh-mcp] 55-state-machine  71.3s  状态机全部转移正确
+PASS  [A:with-dsh-mcp] 57-cache-invalidation  51.6s  缓存正确失效
+PASS  [A:with-dsh-mcp] 58-drain-once  52.7s  drain 后队列清空
+PASS  [A:with-dsh-mcp] 60-ini-parser  64.7s  INI 解析正确
+PASS  [A:with-dsh-mcp] 61-index-offset  38.9s  索引偏移已修正
+PASS  [A:with-dsh-mcp] 59-throttle  83.5s  节流区间内丢弃调用
+PASS  [A:with-dsh-mcp] 63-fallback-chain  44.4s  回退链生效
+PASS  [A:with-dsh-mcp] 62-deep-merge-arrays  84.1s  数组整体替换且新键不丢
+PASS  [A:with-dsh-mcp] 65-constant-drift  42.8s  与共享常量一致
+PASS  [A:with-dsh-mcp] 64-null-propagation  68.7s  空输入优雅降级
+PASS  [A:with-dsh-mcp] 56-csv-parser  177.6s  引号/逗号/转义全部正确
+PASS  [A:with-dsh-mcp] 68-bidirectional-map  45.3s  双向映射一致
+PASS  [A:with-dsh-mcp] 66-proxy-forward  60.3s  字段完整透传
+PASS  [A:with-dsh-mcp] 69-metric-aggregation  45.5s  分组平均值正确
+PASS  [A:with-dsh-mcp] 67-init-order  66.5s  初始化顺序正确
+PASS  [A:with-dsh-mcp] 70-legacy-compat  86.1s  兼容层参数补齐
+PASS  [A:with-dsh-mcp] 72-path-normalize  69.6s  前导 ../ 全部清理
+PASS  [A:with-dsh-mcp] 71-sort-stability  76.3s  同分保持原顺序
+PASS  [A:with-dsh-mcp] 74-token-redact  58.3s  secret 已脱敏
+PASS  [A:with-dsh-mcp] 73-id-gen-race  79.3s  并发 ID 不重复
+PASS  [A:with-dsh-mcp] 76-percent-round  27.4s  四舍五入正确
+PASS  [A:with-dsh-mcp] 77-batch-tail  46.3s  余数批次保留
+PASS  [A:with-dsh-mcp] 75-feature-flag  63.9s  运行时读取最新开关
+PASS  [A:with-dsh-mcp] 78-singleton-bypass  60.2s  单例复用
+PASS  [A:with-dsh-mcp] 81-lru-cache  43.7s  LRU 驱逐正确
+PASS  [A:with-dsh-mcp] 80-validate-order  69.7s  嵌套校验 4 用例正确
+PASS  [A:with-dsh-mcp] 82-round-robin  48.5s  轮转覆盖全部节点
+PASS  [A:with-dsh-mcp] 79-tdd-multi  94.8s  跨 3 模块 5 断言全绿
+PASS  [A:with-dsh-mcp] 84-api-v2-migration  58.8s  3 处调用方全部迁移
+PASS  [A:with-dsh-mcp] 83-dir-sync  91.7s  目录树复制完整
+PASS  [A:with-dsh-mcp] 86-decode-multi  63s  双重编码正确还原
+PASS  [A:with-dsh-mcp] 87-schema-migration  56.4s  email 提升且 contact 精简
+PASS  [A:with-dsh-mcp] 88-threshold-chain  45.7s  四档阈值正确
+PASS  [A:with-dsh-mcp] 85-null-guard-multi  105.4s  3 个入口空输入防御
+PASS  [A:with-dsh-mcp] 91-chain-call  45s  实例隔离
+PASS  [A:with-dsh-mcp] 89-deep-equal  72.1s  深度比较 5 用例正确
+PASS  [A:with-dsh-mcp] 93-offset-rewrite  36s  1 起行号正确
+PASS  [A:with-dsh-mcp] 90-escape-html  69.3s  5 个字符全部转义
+PASS  [A:with-dsh-mcp] 92-duplicate-keys  48s  同 id 字段合并
+PASS  [A:with-dsh-mcp] 98-dedupe-sort  37.6s  去重且升序
+PASS  [A:with-dsh-mcp] 96-escape-regex  50s  字面匹配
+PASS  [A:with-dsh-mcp] 97-config-freeze  53s  配置只读
+PASS  [A:with-dsh-mcp] 95-expiry-cache  78.5s  过期边界正确
+PASS  [A:with-dsh-mcp] 94-dry-run-deep  89s  dryRun 下零副作用
+PASS  [A:with-dsh-mcp] 100-multi-refactor-bug  72.4s  两个 bug 修复、正常函数不受影响
+PASS  [A:with-dsh-mcp] 99-counter-shared  154.6s  两文件各自从 1 开始
+---- A:with-dsh-mcp: 50/50 passed (100%)  avg 65.2s  total 3260s
+
+========== Arm B:raw-claude (50 tasks, concurrency 5) ==========
+PASS  [B:raw-claude] 52-cross-module-consistency  50.4s  两处与 config 一致
+PASS  [B:raw-claude] 53-async-race  65.2s  结果顺序与任务顺序一致
+PASS  [B:raw-claude] 51-deep-trace  68.3s  4 层数据流完整
+PASS  [B:raw-claude] 54-pagination  85.7s  页码从 1 起正确
+PASS  [B:raw-claude] 55-state-machine  103.2s  状态机全部转移正确
+PASS  [B:raw-claude] 58-drain-once  45.7s  drain 后队列清空
+PASS  [B:raw-claude] 57-cache-invalidation  52.5s  缓存正确失效
+PASS  [B:raw-claude] 60-ini-parser  67.5s  INI 解析正确
+PASS  [B:raw-claude] 59-throttle  91.1s  节流区间内丢弃调用
+PASS  [B:raw-claude] 62-deep-merge-arrays  96.2s  数组整体替换且新键不丢
+PASS  [B:raw-claude] 56-csv-parser  165.4s  引号/逗号/转义全部正确
+PASS  [B:raw-claude] 63-fallback-chain  47.7s  回退链生效
+PASS  [B:raw-claude] 64-null-propagation  60s  空输入优雅降级
+PASS  [B:raw-claude] 61-index-offset  159.5s  索引偏移已修正
+PASS  [B:raw-claude] 65-constant-drift  64s  与共享常量一致
+PASS  [B:raw-claude] 66-proxy-forward  84.2s  字段完整透传
+PASS  [B:raw-claude] 69-metric-aggregation  48.8s  分组平均值正确
+PASS  [B:raw-claude] 67-init-order  113s  初始化顺序正确
+PASS  [B:raw-claude] 70-legacy-compat  55.4s  兼容层参数补齐
+FAIL  [B:raw-claude] 73-id-gen-race  24.2s  输出不对: 0
+PASS  [B:raw-claude] 68-bidirectional-map  135.9s  双向映射一致
+PASS  [B:raw-claude] 71-sort-stability  78.4s  同分保持原顺序
+PASS  [B:raw-claude] 75-feature-flag  38.8s  运行时读取最新开关
+PASS  [B:raw-claude] 76-percent-round  53.4s  四舍五入正确
+PASS  [B:raw-claude] 74-token-redact  111.9s  secret 已脱敏
+PASS  [B:raw-claude] 78-singleton-bypass  126.5s  单例复用
+PASS  [B:raw-claude] 80-validate-order  77.6s  嵌套校验 4 用例正确
+PASS  [B:raw-claude] 77-batch-tail  170.5s  余数批次保留
+PASS  [B:raw-claude] 81-lru-cache  52.4s  LRU 驱逐正确
+PASS  [B:raw-claude] 72-path-normalize  260.8s  前导 ../ 全部清理
+PASS  [B:raw-claude] 82-round-robin  70s  轮转覆盖全部节点
+PASS  [B:raw-claude] 84-api-v2-migration  74.3s  3 处调用方全部迁移
+PASS  [B:raw-claude] 85-null-guard-multi  65.7s  3 个入口空输入防御
+FAIL  [B:raw-claude] 88-threshold-chain  22.6s  输出不对: B A A A
+PASS  [B:raw-claude] 79-tdd-multi  259.5s  跨 3 模块 5 断言全绿
+PASS  [B:raw-claude] 86-decode-multi  126.4s  双重编码正确还原
+PASS  [B:raw-claude] 87-schema-migration  72.4s  email 提升且 contact 精简
+PASS  [B:raw-claude] 92-duplicate-keys  58.2s  同 id 字段合并
+PASS  [B:raw-claude] 91-chain-call  62.9s  实例隔离
+PASS  [B:raw-claude] 89-deep-equal  147.5s  深度比较 5 用例正确
+PASS  [B:raw-claude] 93-offset-rewrite  141.3s  1 起行号正确
+PASS  [B:raw-claude] 94-dry-run-deep  157.4s  dryRun 下零副作用
+FAIL  [B:raw-claude] 90-escape-html  257.9s  输出不对: &lt;a href="x" onclick='y'&gt;
+
+PASS  [B:raw-claude] 97-config-freeze  78.1s  配置只读
+FAIL  [B:raw-claude] 98-dedupe-sort  88.2s  输出不对: 3,1,2
+PASS  [B:raw-claude] 83-dir-sync  506.2s  目录树复制完整
+PASS  [B:raw-claude] 96-escape-regex  160s  字面匹配
+PASS  [B:raw-claude] 100-multi-refactor-bug  49.4s  两个 bug 修复、正常函数不受影响
+PASS  [B:raw-claude] 99-counter-shared  149.2s  两文件各自从 1 开始
+FAIL  [B:raw-claude] 95-expiry-cache  600s  claude timed out (600s)
+---- B:raw-claude: 45/50 passed (90%)  avg 116.0s  total 5801s
+
+Results written to tests/bench/results/*.json

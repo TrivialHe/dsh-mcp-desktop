@@ -37,3 +37,20 @@ PASS  [B:raw-claude] 28-flatten  246.3s  展平正确
 PASS  [B:raw-claude] 35-error-propagation  105.2s  错误正确传播
 PASS  [B:raw-claude] 36-double-encoding  128.6s  单次编码正确
 PASS  [B:raw-claude] 38-priority-order  96.7s  先注册先执行
+PASS  [B:raw-claude] 40-priority-compare  121.4s  按优先级降序
+PASS  [B:raw-claude] 41-memoize  126.2s  缓存命中正确
+PASS  [B:raw-claude] 37-dir-walk  259.1s  3 个文件按字典序列出
+PASS  [B:raw-claude] 31-extract-text-utils  436.4s  两处已提取到共享模块
+PASS  [B:raw-claude] 42-dry-run  102.3s  dryRun 模式不修改 plan
+PASS  [B:raw-claude] 45-money-precision  68.3s  金额精确到分
+PASS  [B:raw-claude] 43-sort-keys  92s  键名升序
+PASS  [B:raw-claude] 44-retry  91.4s  重试 3 次成功
+PASS  [B:raw-claude] 49-state-leak  72.5s  实例间计数隔离
+PASS  [B:raw-claude] 48-empty-input  101.9s  空数组返回 0
+FAIL  [B:raw-claude] 50-multi-bug  25.6s  输出不对: 19.5 total:
+FAIL  [B:raw-claude] 39-split-util  444.7s  utils.js 仍存在
+PASS  [B:raw-claude] 47-cron-minutes  192.9s  3 种 cron 表达式解析正确
+PASS  [B:raw-claude] 46-inject-deps  218.2s  依赖已注入且输出正确
+---- B:raw-claude: 44/50 passed (88%)  avg 124.4s  total 6218s
+
+Results written to tests/bench/results/*.json
