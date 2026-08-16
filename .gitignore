@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.tsbuildinfo
+*.tgz
+
+# Upstream DeepSeek Harness monorepo, cloned locally for reference only
+deepseek-harness/

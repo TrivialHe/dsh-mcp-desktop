@@ -1,0 +1,97 @@
+
+========== Arm A:with-dsh-mcp (50 tasks, concurrency 5) ==========
+PASS  [A:with-dsh-mcp] 02-cascade-bug  47.8s  输出含 50 USD: 50 USD
+PASS  [A:with-dsh-mcp] 03-implement-spec  48.3s  JSON 完全匹配
+PASS  [A:with-dsh-mcp] 05-fix-todos  53.8s  5 个值全部正确
+PASS  [A:with-dsh-mcp] 04-move-util  90.3s  3 个脚本全部输出正确
+PASS  [A:with-dsh-mcp] 06-cjs-to-esm  64.3s  ESM 化完成，输出 HELLO WORLD
+PASS  [A:with-dsh-mcp] 08-missing-function  60.7s  输出 85
+PASS  [A:with-dsh-mcp] 07-type-fix  99.8s  3 行输出正确且无崩溃
+PASS  [A:with-dsh-mcp] 09-data-flow  64.9s  fetch(2) 返回 Bob
+PASS  [A:with-dsh-mcp] 11-async-fix  71.2s  输出 v = 42
+PASS  [A:with-dsh-mcp] 12-boundary-check  53.7s  越界返回 out-of-range
+PASS  [A:with-dsh-mcp] 01-rename-export  220.8s  输出 total: 30 / order: 30
+PASS  [A:with-dsh-mcp] 13-config-mapping  70.9s  两处旧键已修复
+PASS  [A:with-dsh-mcp] 14-error-handling  53.1s  正常输出且无崩溃
+PASS  [A:with-dsh-mcp] 15-string-format  91.5s  拼接顺序正确
+PASS  [A:with-dsh-mcp] 17-fix-failing-test  72.1s  测试全绿
+PASS  [A:with-dsh-mcp] 18-metric-conversion  85.3s  输出 1 KiB
+PASS  [A:with-dsh-mcp] 20-sort-order  44.3s  降序正确
+PASS  [A:with-dsh-mcp] 22-shared-state  41.2s  键值存储方向正确
+PASS  [A:with-dsh-mcp] 19-logging-audit  95.4s  3 个入口函数均有日志注释
+PASS  [A:with-dsh-mcp] 16-import-cycle  177.7s  循环依赖已修复
+PASS  [A:with-dsh-mcp] 10-dedupe-refactor  292.8s  3 处调用共享模块，输出正确
+PASS  [A:with-dsh-mcp] 21-deep-copy  103.9s  深拷贝且互不影响
+PASS  [A:with-dsh-mcp] 25-test-driven  59.8s  3 个断言全部通过
+PASS  [A:with-dsh-mcp] 24-implement-queue  74.4s  FIFO 行为正确
+PASS  [A:with-dsh-mcp] 23-rename-module  91.9s  4 个调用方全部迁移完成
+PASS  [A:with-dsh-mcp] 29-threshold  31.8s  边界判断正确
+PASS  [A:with-dsh-mcp] 26-validate-user  100.1s  3 个用例校验正确
+PASS  [A:with-dsh-mcp] 28-flatten  58.1s  展平正确
+PASS  [A:with-dsh-mcp] 30-simple-hash  71.2s  哈希值与 spec 一致
+PASS  [A:with-dsh-mcp] 27-log-migration  129.9s  5 处日志全部迁移
+PASS  [A:with-dsh-mcp] 32-async-order  53.1s  顺序正确 AB
+PASS  [A:with-dsh-mcp] 33-off-by-one  50.6s  边界包含 n
+PASS  [A:with-dsh-mcp] 34-merge-config  76.8s  深合并正确
+PASS  [A:with-dsh-mcp] 35-error-propagation  70.9s  错误正确传播
+PASS  [A:with-dsh-mcp] 36-double-encoding  78.1s  单次编码正确
+PASS  [A:with-dsh-mcp] 31-extract-text-utils  165.5s  两处已提取到共享模块
+PASS  [A:with-dsh-mcp] 38-priority-order  52.5s  先注册先执行
+PASS  [A:with-dsh-mcp] 37-dir-walk  126.3s  3 个文件按字典序列出
+PASS  [A:with-dsh-mcp] 41-memoize  57.5s  缓存命中正确
+PASS  [A:with-dsh-mcp] 40-priority-compare  85.3s  按优先级降序
+PASS  [A:with-dsh-mcp] 43-sort-keys  48.3s  键名升序
+PASS  [A:with-dsh-mcp] 45-money-precision  47.9s  金额精确到分
+PASS  [A:with-dsh-mcp] 42-dry-run  99.4s  dryRun 模式不修改 plan
+PASS  [A:with-dsh-mcp] 39-split-util  151.8s  3 个职责文件拆分完成
+PASS  [A:with-dsh-mcp] 44-retry  72s  重试 3 次成功
+PASS  [A:with-dsh-mcp] 48-empty-input  41s  空数组返回 0
+PASS  [A:with-dsh-mcp] 47-cron-minutes  68s  3 种 cron 表达式解析正确
+PASS  [A:with-dsh-mcp] 49-state-leak  79.3s  实例间计数隔离
+PASS  [A:with-dsh-mcp] 46-inject-deps  133.3s  依赖已注入且输出正确
+PASS  [A:with-dsh-mcp] 50-multi-bug  207.9s  3 个 bug 全部修复
+---- A:with-dsh-mcp: 50/50 passed (100%)  avg 87.7s  total 4387s
+
+========== Arm B:raw-claude (50 tasks, concurrency 5) ==========
+PASS  [B:raw-claude] 02-cascade-bug  45.8s  输出含 50 USD: 50 USD
+PASS  [B:raw-claude] 03-implement-spec  57.9s  JSON 完全匹配
+PASS  [B:raw-claude] 05-fix-todos  60.1s  5 个值全部正确
+PASS  [B:raw-claude] 01-rename-export  89.4s  输出 total: 30 / order: 30
+PASS  [B:raw-claude] 04-move-util  104.5s  3 个脚本全部输出正确
+PASS  [B:raw-claude] 06-cjs-to-esm  78.8s  ESM 化完成，输出 HELLO WORLD
+PASS  [B:raw-claude] 08-missing-function  92.6s  输出 85
+PASS  [B:raw-claude] 11-async-fix  52.3s  输出 v = 42
+PASS  [B:raw-claude] 10-dedupe-refactor  77.7s  3 处调用共享模块，输出正确
+PASS  [B:raw-claude] 12-boundary-check  66.5s  越界返回 out-of-range
+FAIL  [B:raw-claude] 09-data-flow  137.5s  输出不对: {"id":1,"name":"Ada"}
+
+PASS  [B:raw-claude] 14-error-handling  75.8s  正常输出且无崩溃
+PASS  [B:raw-claude] 15-string-format  45.7s  拼接顺序正确
+PASS  [B:raw-claude] 07-type-fix  213.1s  3 行输出正确且无崩溃
+FAIL  [B:raw-claude] 19-logging-audit  25s  缺少 // LOG: createOrder entered
+PASS  [B:raw-claude] 18-metric-conversion  57.5s  输出 1 KiB
+PASS  [B:raw-claude] 13-config-mapping  148.2s  两处旧键已修复
+PASS  [B:raw-claude] 20-sort-order  47.3s  降序正确
+PASS  [B:raw-claude] 16-import-cycle  144.3s  循环依赖已修复
+PASS  [B:raw-claude] 24-implement-queue  59.4s  FIFO 行为正确
+PASS  [B:raw-claude] 22-shared-state  171.8s  键值存储方向正确
+node:fs:1222
+  return binding.rmSync(getValidatedPath(path), opts.maxRetries, opts.recursive, opts.retryDelay);
+                 ^
+
+Error: EPERM, Permission denied: \\?\C:\Users\MR_POT~1\AppData\Local\Temp\dsh-bench-15284-1786909228555\B-17-fix-failing-test '\\?\C:\Users\MR_POT~1\AppData\Local\Temp\dsh-bench-15284-1786909228555\B-17-fix-failing-test'
+    at rmSync (node:fs:1222:18)
+    at runOne (file:///D:/Documents/Project/dsh-mcp/tests/bench/run-bench.mjs:148:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async file:///D:/Documents/Project/dsh-mcp/tests/bench/run-bench.mjs:200:19
+    at async file:///D:/Documents/Project/dsh-mcp/tests/bench/run-bench.mjs:166:7
+    at async Promise.all (index 3)
+    at async pool (file:///D:/Documents/Project/dsh-mcp/tests/bench/run-bench.mjs:169:3)
+    at async file:///D:/Documents/Project/dsh-mcp/tests/bench/run-bench.mjs:197:3 {
+  errno: 1,
+  code: 'EPERM',
+  path: '\\\\?\\C:\\Users\\MR_POT~1\\AppData\\Local\\Temp\\dsh-bench-15284-1786909228555\\B-17-fix-failing-test',
+  syscall: 'rm'
+}
+
+Node.js v24.16.0

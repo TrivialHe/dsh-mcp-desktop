@@ -1,0 +1,39 @@
+BENCH_RESUME=1: loaded 71 existing result(s), skipping them
+
+========== Arm B:raw-claude (50 tasks, concurrency 5) ==========
+SKIP  [B:raw-claude] 01-rename-export (already in results)
+SKIP  [B:raw-claude] 02-cascade-bug (already in results)
+SKIP  [B:raw-claude] 03-implement-spec (already in results)
+SKIP  [B:raw-claude] 04-move-util (already in results)
+SKIP  [B:raw-claude] 05-fix-todos (already in results)
+SKIP  [B:raw-claude] 06-cjs-to-esm (already in results)
+SKIP  [B:raw-claude] 07-type-fix (already in results)
+SKIP  [B:raw-claude] 08-missing-function (already in results)
+SKIP  [B:raw-claude] 09-data-flow (already in results)
+SKIP  [B:raw-claude] 10-dedupe-refactor (already in results)
+SKIP  [B:raw-claude] 11-async-fix (already in results)
+SKIP  [B:raw-claude] 12-boundary-check (already in results)
+SKIP  [B:raw-claude] 13-config-mapping (already in results)
+SKIP  [B:raw-claude] 14-error-handling (already in results)
+SKIP  [B:raw-claude] 15-string-format (already in results)
+SKIP  [B:raw-claude] 16-import-cycle (already in results)
+SKIP  [B:raw-claude] 18-metric-conversion (already in results)
+SKIP  [B:raw-claude] 19-logging-audit (already in results)
+SKIP  [B:raw-claude] 20-sort-order (already in results)
+SKIP  [B:raw-claude] 22-shared-state (already in results)
+SKIP  [B:raw-claude] 24-implement-queue (already in results)
+PASS  [B:raw-claude] 26-validate-user  102.9s  3 个用例校验正确
+FAIL  [B:raw-claude] 27-log-migration  61.3s  src/mod1.js 未使用 logger.log
+PASS  [B:raw-claude] 17-fix-failing-test  176.8s  测试全绿
+PASS  [B:raw-claude] 25-test-driven  177.4s  3 个断言全部通过
+PASS  [B:raw-claude] 21-deep-copy  216.7s  深拷贝且互不影响
+PASS  [B:raw-claude] 30-simple-hash  78.9s  哈希值与 spec 一致
+PASS  [B:raw-claude] 29-threshold  86.9s  边界判断正确
+PASS  [B:raw-claude] 32-async-order  49.5s  顺序正确 AB
+PASS  [B:raw-claude] 33-off-by-one  58.6s  边界包含 n
+FAIL  [B:raw-claude] 23-rename-module  348.9s  legacy_utils.js 仍存在
+PASS  [B:raw-claude] 34-merge-config  79.2s  深合并正确
+PASS  [B:raw-claude] 28-flatten  246.3s  展平正确
+PASS  [B:raw-claude] 35-error-propagation  105.2s  错误正确传播
+PASS  [B:raw-claude] 36-double-encoding  128.6s  单次编码正确
+PASS  [B:raw-claude] 38-priority-order  96.7s  先注册先执行

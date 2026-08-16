@@ -1,0 +1,32 @@
+{
+  "name": "dsh-mcp",
+  "version": "0.1.0",
+  "description": "A lightweight MCP server for delegating tasks to DeepSeek Harness.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "dsh-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "prepack": "npm run build && npm test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2",
+    "zod": "^4"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^5",
+    "vitest": "^3"
+  }
+}

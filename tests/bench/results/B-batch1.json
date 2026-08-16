@@ -1,0 +1,191 @@
+[
+  {
+    "mode": "B:raw-claude",
+    "task": "02-cascade-bug",
+    "pass": true,
+    "seconds": 45.8,
+    "detail": "输出含 50 USD: 50 USD",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "03-implement-spec",
+    "pass": true,
+    "seconds": 57.9,
+    "detail": "JSON 完全匹配",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "05-fix-todos",
+    "pass": true,
+    "seconds": 60.1,
+    "detail": "5 个值全部正确",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "01-rename-export",
+    "pass": true,
+    "seconds": 89.4,
+    "detail": "输出 total: 30 / order: 30",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "04-move-util",
+    "pass": true,
+    "seconds": 104.5,
+    "detail": "3 个脚本全部输出正确",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "06-cjs-to-esm",
+    "pass": true,
+    "seconds": 78.8,
+    "detail": "ESM 化完成，输出 HELLO WORLD",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "08-missing-function",
+    "pass": true,
+    "seconds": 92.6,
+    "detail": "输出 85",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "11-async-fix",
+    "pass": true,
+    "seconds": 52.3,
+    "detail": "输出 v = 42",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "10-dedupe-refactor",
+    "pass": true,
+    "seconds": 77.7,
+    "detail": "3 处调用共享模块，输出正确",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "12-boundary-check",
+    "pass": true,
+    "seconds": 66.5,
+    "detail": "越界返回 out-of-range",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "09-data-flow",
+    "pass": false,
+    "seconds": 137.5,
+    "detail": "输出不对: {\"id\":1,\"name\":\"Ada\"}\n",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "14-error-handling",
+    "pass": true,
+    "seconds": 75.8,
+    "detail": "正常输出且无崩溃",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "15-string-format",
+    "pass": true,
+    "seconds": 45.7,
+    "detail": "拼接顺序正确",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "07-type-fix",
+    "pass": true,
+    "seconds": 213.1,
+    "detail": "3 行输出正确且无崩溃",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "19-logging-audit",
+    "pass": false,
+    "seconds": 25,
+    "detail": "缺少 // LOG: createOrder entered",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "18-metric-conversion",
+    "pass": true,
+    "seconds": 57.5,
+    "detail": "输出 1 KiB",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "13-config-mapping",
+    "pass": true,
+    "seconds": 148.2,
+    "detail": "两处旧键已修复",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "20-sort-order",
+    "pass": true,
+    "seconds": 47.3,
+    "detail": "降序正确",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "16-import-cycle",
+    "pass": true,
+    "seconds": 144.3,
+    "detail": "循环依赖已修复",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "24-implement-queue",
+    "pass": true,
+    "seconds": 59.4,
+    "detail": "FIFO 行为正确",
+    "claudeExit": 0,
+    "timedOut": false
+  },
+  {
+    "mode": "B:raw-claude",
+    "task": "22-shared-state",
+    "pass": true,
+    "seconds": 171.8,
+    "detail": "键值存储方向正确",
+    "claudeExit": 0,
+    "timedOut": false
+  }
+]
