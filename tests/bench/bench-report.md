@@ -1,7 +1,8 @@
 # dsh-mcp A/B Benchmark 报告（100 任务，异构模型）
 
-> 日期：2026-08-17。**异构模型**：父代理（claude.exe）= deepseek-v4-pro[1m]，
-> DSH 子代理 = deepseek-v4-flash（reasoningEffort: max）。
+> 日期：2026-08-17。**异构模型**：父代理（claude.exe）= deepseek-v4-pro[1m]
+> （经 `ANTHROPIC_MODEL: deepseek-v4-pro[1m]` 环境变量配置——内核是 DeepSeek
+> 模型，不是 Anthropic 模型），DSH 子代理 = deepseek-v4-flash（reasoningEffort: max）。
 > 两批各 50 题（01–50 常规题 + 51–100 加难题），并发 5。
 > 复现：`DEEPSEEK_API_KEY=... node tests/bench/run-bench.mjs AB 01-50|51-100`
 > （见 [run-bench.mjs](run-bench.mjs)、[tasks.mjs](tasks.mjs)）。
@@ -14,8 +15,9 @@
   审计/状态机/解析器/并发竞态/缓存）。每个任务含 fixture + 自然语言 issue +
   自动化 ground-truth 验证（运行断言 + stdout 检查）。双向校准：干净 fixture
   必 FAIL（100/100），参考修复必 PASS（80/80，另有 20 个在首轮真实运行中验证）。
-- **组 A（有插件）**：claude 只见 `mcp__dsh__delegate_to_dsh`，所有文件操作
-  委派 DSH（parent-agent 模型，ENGINEERING.md §1）。
+- **组 A（有插件）**：claude 只见 `mcp__dsh__*` 工具门类
+  （delegate_to_dsh / dsh_investigate / dsh_fix / dsh_execute / dsh_status），
+  所有文件操作委派 DSH（parent-agent 模型，ENGINEERING.md §1）。
 - **组 B（无插件基线）**：claude 用原生 Read/Write/Edit/Glob/Grep/Bash + acceptEdits。
 - **指标**：pass/fail（二元）+ 每任务 wall time；单任务超时 600s 保护。
 - 每任务临时目录在验证后即删（含 API key 的 mcp.json 绝不落盘）。

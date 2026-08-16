@@ -58,10 +58,10 @@ const ARMS = {
   A: {
     name: 'A:with-dsh-mcp',
     promptSuffix:
-      '\n\n要求：不要自己读取或修改任何文件，不要使用除 delegate_to_dsh 之外的任何工具。所有文件操作（读取、修改、运行命令验证）都必须通过 delegate_to_dsh 工具委派给 DSH 子代理完成。DSH 每次调用是独立无状态的进程，因此每次委派给它的子任务描述必须完整自包含（包含所需路径与全部上下文），不要使用"同上"或"接着上次"。',
+      '\n\n要求：不要自己读取或修改任何文件，不要使用除 dsh 工具（delegate_to_dsh / dsh_investigate / dsh_fix / dsh_execute / dsh_status）之外的任何工具。所有文件操作（读取、修改、运行命令验证）都必须通过 dsh 工具委派给 DSH 子代理完成。DSH 每次调用是独立无状态的进程，因此每次委派给它的子任务描述必须完整自包含（包含所需路径与全部上下文），不要使用"同上"或"接着上次"。',
     args: (mcpPath) => [
       '--mcp-config', mcpPath,
-      '--allowedTools', 'mcp__dsh__delegate_to_dsh',
+      '--allowedTools', 'mcp__dsh__*',
     ],
     needsMcp: true,
   },

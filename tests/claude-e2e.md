@@ -5,7 +5,9 @@
 ## 自动化方式（推荐）
 
 `tests/e2e-headless.mjs` 用 `claude -p`（headless）驱动真实链路：
-Claude Code → MCP stdio → `delegate_to_dsh` → 真实 DSH → 真实 DeepSeek API。
+Claude Code → MCP stdio → `dsh` 工具门类（delegate_to_dsh /
+dsh_investigate / dsh_fix / dsh_execute / dsh_status）→ 真实 DSH →
+真实 DeepSeek API。
 
 ```powershell
 set DEEPSEEK_API_KEY=sk-...
@@ -29,7 +31,8 @@ node tests\long-horizon-e2e.mjs
 DSH ③读回 → Claude 自行逐模块验证并总结。
 
 断言：磁盘上 3 个文件真实被修改（标记在 TODO 行正下方）、流中出现
-≥2 次 `delegate_to_dsh` 工具调用、Claude 输出最终总结。
+≥2 次 `mcp__dsh__*` 工具调用（V0.2 起按门类：调查用 dsh_investigate、
+修改用 dsh_fix）、Claude 输出最终总结。
 prompt 强制每次委派自包含（DSH 每次调用是独立无状态进程，§23）。
 
 实测（2026-08-17，deepseek-v4-flash）：约 45–60 秒完成，3 次委派
@@ -77,8 +80,10 @@ test-project\
 返回项目名称以及 README 第一段"委派给 DSH。
 ```
 
-期望：Claude 调用 `delegate_to_dsh`，DSH 在 `D:\dev\test-project` 工作，
-返回 README 内容，而不是 `src\demo`、`dsh-mcp` 或 `deepseek-harness`。
+期望：Claude 调用 `dsh_investigate`（只读调查门类），DSH 在
+`D:\dev\test-project` 工作，返回 README 内容，而不是 `src\demo`、
+`dsh-mcp` 或 `deepseek-harness`。返回末尾带 `[mcp]` 块
+（exitCode / durationMs / changedFiles: 0）。
 
 ## Test B：验证 workspace
 

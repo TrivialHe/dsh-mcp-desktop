@@ -118,7 +118,7 @@ function runClaude({ cwd, prompt, mcpConfigPath, timeoutMs }) {
         '--mcp-config',
         mcpConfigPath,
         '--allowedTools',
-        'mcp__dsh__delegate_to_dsh',
+        'mcp__dsh__*',
         '--max-turns',
         '30',
         '--output-format',
@@ -146,20 +146,20 @@ function runClaude({ cwd, prompt, mcpConfigPath, timeoutMs }) {
   })
 }
 
-const LONG_PROMPT = `这是一个多步骤工程任务，请像资深工程师一样完成。核心推理（规划、分析、决策）必须由你自己完成；所有文件系统操作必须通过 delegate_to_dsh 工具委派给 DSH 子代理执行。注意：DSH 每次调用是独立的无状态进程（不记得上次调用），所以每次委派给它的子任务描述必须自包含、完整，不要使用"同上""接着上次"这类表述。
+const LONG_PROMPT = `这是一个多步骤工程任务，请像资深工程师一样完成。核心推理（规划、分析、决策）必须由你自己完成；所有文件系统操作必须通过 dsh 工具门类委派给 DSH 子代理执行（只读调查用 dsh_investigate，修改文件用 dsh_fix，执行命令用 dsh_execute）。注意：DSH 每次调用是独立的无状态进程（不记得上次调用），所以每次委派给它的子任务描述必须自包含、完整，不要使用"同上""接着上次"这类表述。
 
 项目 src/ 下有 3 个 TypeScript 模块：module-a.ts、module-b.ts、module-c.ts。每个文件都有一个标记为 TODO 的逻辑问题（值不对，注释里说明了应为的值）。
 
 请按以下流程执行：
 
 1. 规划：先简要说明你的执行计划（1-2 句即可，这是你自己做的）。
-2. 委派调查：调用 delegate_to_dsh 一次，子任务为"读取当前项目 src/ 目录下的 module-a.ts、module-b.ts、module-c.ts 三个文件，逐个返回每个文件的完整内容，并指出每个文件的 TODO 注释内容"。
+2. 委派调查：调用 dsh_investigate 一次，子任务为"读取当前项目 src/ 目录下的 module-a.ts、module-b.ts、module-c.ts 三个文件，逐个返回每个文件的完整内容，并指出每个文件的 TODO 注释内容"。
 3. 核心推理：根据 DSH 返回的内容，你自己诊断每个模块的问题是什么、正确值应该是什么（这是核心推理，不要委派）。
-4. 委派修复：调用 delegate_to_dsh 一次，子任务为"在项目 src/ 目录下三个文件（module-a.ts、module-b.ts、module-c.ts）中，在每个文件的 TODO 注释行的正下方插入一行注释"// fixed-by-claude-<模块名>"（module-a.ts 插入 // fixed-by-claude-module-a，module-b.ts 插入 // fixed-by-claude-module-b，module-c.ts 插入 // fixed-by-claude-module-c），其余内容保持不变。完成后报告每个文件是否修改成功"。
-5. 委派读回：调用 delegate_to_dsh 一次，子任务为"读取项目 src/ 目录下 module-a.ts、module-b.ts、module-c.ts 三个文件的完整内容并返回"。
+4. 委派修复：调用 dsh_fix 一次，子任务为"在项目 src/ 目录下三个文件（module-a.ts、module-b.ts、module-c.ts）中，在每个文件的 TODO 注释行的正下方插入一行注释"// fixed-by-claude-<模块名>"（module-a.ts 插入 // fixed-by-claude-module-a，module-b.ts 插入 // fixed-by-claude-module-b，module-c.ts 插入 // fixed-by-claude-module-c），其余内容保持不变。完成后报告每个文件是否修改成功"。
+5. 委派读回：调用 dsh_investigate 一次，子任务为"读取项目 src/ 目录下 module-a.ts、module-b.ts、module-c.ts 三个文件的完整内容并返回"。
 6. 验证与总结：你自己对照第 5 步读回的内容，逐模块确认"// fixed-by-claude-<模块名>"标记是否存在（这是你的核心推理，不要委派），然后给出最终总结：每个模块的 TODO 是否已处理、文件中实际的 greeting/maxCount/label 值。
 
-不要使用任何其他工具读取或修改文件；所有文件操作只通过 delegate_to_dsh。`
+不要使用任何其他工具读取或修改文件；所有文件操作只通过 dsh 工具。`
 
 // ── main ─────────────────────────────────────────────────────────────────
 const sandbox = join(tmpdir(), `dsh-long-horizon-${process.pid}-${Date.now()}`)
@@ -245,7 +245,7 @@ try {
     for (const item of events) {
       if (item?.type === 'assistant' && Array.isArray(item.message?.content)) {
         for (const block of item.message.content) {
-          if (block?.type === 'tool_use' && String(block.name).endsWith('delegate_to_dsh')) {
+          if (block?.type === 'tool_use' && String(block.name).startsWith('mcp__dsh__')) {
             const task = String(block.input?.task ?? '')
             delegations.push(task.length > 160 ? task.slice(0, 160) + '…' : task)
           }
@@ -254,7 +254,7 @@ try {
         finalResult = item.result ?? item.resultText ?? JSON.stringify(item)
       }
     }
-    console.log(`\n---- delegate_to_dsh tool calls in stream: ${delegations.length} ----`)
+    console.log(`\n---- dsh tool calls in stream: ${delegations.length} ----`)
     delegations.forEach((t, i) => console.log(`  #${i + 1} ${t}`))
     if (delegations.length < 2)
       fail('multi-step: more than one delegation', `got ${delegations.length}`)

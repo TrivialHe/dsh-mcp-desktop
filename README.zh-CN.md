@@ -73,7 +73,7 @@ npm install
 npm run build                      # → dist\index.js
 ```
 
-**第 2 步：注册到 Claude Code**
+**第 2 步：注册到你的 MCP 客户端（以 Claude Code 为例）**
 
 ```powershell
 claude mcp add dsh `
@@ -83,6 +83,9 @@ claude mcp add dsh `
 
 claude mcp list                    # 确认列表里有 "dsh"
 ```
+
+这是标准 MCP 服务端——同一个 `dist\index.js` 也适用于 OpenAI Codex、
+Cursor、VS Code 及任何其他 MCP 客户端（见[部署](#部署)）。
 
 **第 3 步：重启 Claude Code，完成第一次委派**
 
@@ -105,6 +108,10 @@ Claude Code 启动时才加载 MCP 服务器，所以在任意项目目录里重
 > 缓存、跨进程状态）· 自动化 ground-truth 验证（运行断言 + stdout 检查；
 > 干净 fixture 必 FAIL、参考修复必 PASS）· 异构模型：双组父 = deepseek-v4-pro、
 > A 组 DSH = deepseek-v4-flash
+> · **实验说明：本 benchmark 里的 Claude Code 跑在 deepseek-v4-pro 内核上**
+> （经 `ANTHROPIC_MODEL` 环境变量配置）——两组父代理都是 DeepSeek 模型，
+> 不是 Anthropic 模型。因此差距就是插件本身：同一个 DeepSeek 父模型，
+> 有插件 vs 无插件
 > · 完整明细：[`tests/bench/bench-report.md`](tests/bench/bench-report.md)
 > · 任务集：[`tests/bench/tasks.mjs`](tests/bench/tasks.mjs)
 
@@ -141,9 +148,54 @@ DEEPSEEK_API_KEY=sk-... node tests\long-horizon-e2e.mjs             # 多轮委�
 
 > key 只进入沙箱内的临时 `mcp.json`，退出即删——绝不写入仓库、绝不打印。
 
-## 配置
+## 工具
 
-### 方式 A：注册到 Claude Code（推荐）
+按职责拆成一组工具，让父代理按意图精确选择（工具名 + 描述本身就是
+模型的决策依据）：
+
+| 工具 | 用它做什么 | 约束 |
+|---|---|---|
+| `delegate_to_dsh` | 通用自包含任务 | 无——一切由你的 task 文本决定 |
+| `dsh_investigate` | 只读调查：读文件、追调用链、"查 X 被谁引用" | 指示子代理绝不修改文件、不运行有副作用的命令 |
+| `dsh_fix` | 修改代码：修 bug、重构、迁移、边界明确的实现 | 子代理改完会验证（任务指定了检查命令时）并列出每个改动的文件 |
+| `dsh_execute` | 执行命令：测试套件、构建脚本、环境查询 | 报告完整输出 + 退出码，不动源代码 |
+| `dsh_status` | 环境诊断：DSH 解析、CLI 版本、模型配置、超时、key 是否存在 | 不启动 DSH 子进程，不要求 API key |
+
+所有委派类工具共用一套参数：`task`（必填）、`cwd`（可选）、`timeoutMs`
+（per-call 覆盖 `DSH_MCP_TIMEOUT_MS`）、`trackChanges`（默认开）。
+
+**变更追踪——黑盒有了尾巴。** DSH headless 只回最终消息：没有 diff、
+没有文件清单。因此每次委派前后都会对工作区做快照，并在结果末尾附加
+`[mcp]` 块，父代理由此知道委派到底动了哪些文件：
+
+```text
+<DSH 最终输出>
+
+[mcp] exitCode: 0
+[mcp] durationMs: 45210
+[mcp] cwd: D:\workspace\foo
+[mcp] changedFiles: 2
+[mcp]   M src/store.js      (modified)
+[mcp]   A src/store.test.js (added)
+```
+
+超大型仓库可用 `trackChanges: false`（或 `DSH_MCP_TRACK_CHANGES=0`）跳过
+快照。依赖/构建目录（`node_modules`、`.git`、`dist`、`build`、`coverage`
+等）与隐藏目录永远不纳入快照。
+
+> 门类约束是通过任务模板落地的，不是 CLI 层——DSH headless 没有只读
+> flag。变更追踪是兜底安全网：万一 `dsh_investigate` 还是改了东西，
+> `[mcp] changedFiles` 会把违约暴露出来，父代理可以自己去检查。
+
+## 部署
+
+`dsh-mcp` 是**标准 MCP stdio 服务端**。没有任何东西绑定某个具体客户端：
+任何会说 MCP 的客户端都能接——Claude Code、OpenAI Codex、Cursor、
+VS Code、Claude Desktop，或你自己的工具。Claude Code 只是我们做过端到端
+验证的那个客户端。服务端与 `dsh` 工具门类在任何客户端下完全一致，只有
+注册这一步不同。
+
+### Claude Code（一条命令——示例）
 
 ```powershell
 claude mcp add dsh `
@@ -154,8 +206,28 @@ claude mcp add dsh `
 claude mcp list
 ```
 
-> 其他 MCP 客户端用同一个服务端即可——指向 `dist\index.js`，配上同样的环境
-> 变量。项目级配置示例：
+### OpenAI Codex
+
+Codex 从 `%USERPROFILE%\.codex\config.toml` 加载 MCP 服务端（项目级：
+`.codex\config.toml`）。追加：
+
+```toml
+[mcp_servers.dsh]
+command = "node"
+args = ["D:\\path\\to\\dsh-mcp\\dist\\index.js"]
+env = { DEEPSEEK_API_KEY = "sk-..." }
+```
+
+重启 `codex` 后直接说人话，例如"用 dsh_investigate 工具读取 README 和
+package.json，报告项目名"。Codex 看不到 DSH 内部（对宿主而言 DSH 是
+黑盒）——这正是每次委派返回 `[mcp] changedFiles` 块的原因：即使宿主
+不是 Claude Code，父代理也能知道委派动了哪些文件。
+
+### 任何其他 MCP 客户端
+
+把你的客户端指向 `dist\index.js`，配上同样的环境变量。多数客户端接受
+JSON 形式的 `mcpServers` 配置（Claude Code 项目级配置、Cursor `mcp.json`、
+VS Code、Claude Desktop 等）：
 
 ```json
 {
@@ -214,12 +286,14 @@ claude mcp add dsh `
 | `CLI build artifact is missing` | 在 DSH checkout 执行 `pnpm install && pnpm run build` |
 | `DEEPSEEK_API_KEY is not configured` | 补 `--env DEEPSEEK_API_KEY=...` 重新注册并重启 |
 | workspace 不对 | 解析链：工具 `cwd` → `CLAUDE_PROJECT_DIR` → `MCP_WORKSPACE_DIR` → 进程 cwd |
+| 委派失败又查不出原因 | 先跑 `dsh_status`——它报告 DSH 解析、CLI 版本、模型配置、超时与 key 状态 |
 
 ## 怎么委派
 
-`delegate_to_dsh` 只有一个 `task` 参数。每次调用都会启动一个**全新的** DSH
-子代理，在你的项目工作区里执行并返回最终结果。DSH 跨调用**没有记忆**——这
-是设计使然（没有会被污染的会话）——所以只有一条铁律：
+所有委派类工具都只有一个 `task` 参数（完整门类见[工具](#工具)）。每次
+调用都会启动一个**全新的** DSH 子代理，在你的项目工作区里执行并返回
+最终结果。DSH 跨调用**没有记忆**——这是设计使然（没有会被污染的会话）
+——所以只有一条铁律：
 
 > **每次委派必须自包含。** 把子任务需要的一切都给 DSH：文件路径、上下文、
 > 期望的结果。绝不要写"同上"、"像刚才那样"、"我之前提到的那个文件"——
@@ -288,7 +362,10 @@ DSH:  找到了：src/auth/session.js:37 捕获错误后返回 null 而没有重
 
 早期开发在 **deepseek-v4-flash** 上完成（父代理与 DSH 皆是）；上面的 100 题
 benchmark 跑的是异构组合 **父 = deepseek-v4-pro[1m]、DSH = deepseek-v4-flash**
-（B 组用同一个 pro 父模型但不装插件，所以差距就是插件本身）。架构就是重点：
+（B 组用同一个 pro 父模型但不装插件，所以差距就是插件本身）。benchmark
+里的 Claude Code 内核是 DeepSeek 的模型（`ANTHROPIC_MODEL: deepseek-v4-pro[1m]`），
+不是 Anthropic 模型；下面的父代理结论只假设"父代理足够强"，与厂商无关。
+架构就是重点：
 父代理每轮 token 消耗保持极小（纯推理），token 密集的工作在 DSH 侧按
 DeepSeek 计价完成。
 
@@ -308,7 +385,7 @@ benchmark 复测即可验证。*
 
 | 层 | 覆盖 | 状态 |
 | --- | --- | --- |
-| 单元测试 | 23 个 vitest（DSH 发现 / workspace / runner） | ✅ |
+| 单元测试 | 42 个 vitest（DSH 发现 / workspace / runner / 变更追踪 / 工具面） | ✅ |
 | 真实 E2E（Claude Code） | 子目录启动 · 中文 · 路径含空格 · 真实 API | ✅ |
 | 长程任务 | 规划 → 调查 → 诊断 → 修复 → 读回 → 验证 | ✅ 5/5 |
 | A/B benchmark | 100 任务 × 2 组（正确率 + runtime，p<0.001） | ✅ |

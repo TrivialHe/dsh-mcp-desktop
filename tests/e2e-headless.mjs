@@ -93,7 +93,7 @@ function runClaude({ cwd, prompt, mcpConfigPath, timeoutMs }) {
         '--mcp-config',
         mcpConfigPath,
         '--allowedTools',
-        'mcp__dsh__delegate_to_dsh',
+        'mcp__dsh__*',
         '--output-format',
         'json',
       ],

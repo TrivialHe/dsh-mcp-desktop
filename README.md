@@ -79,7 +79,7 @@ npm install
 npm run build                      # → dist\index.js
 ```
 
-**Step 2 — register with Claude Code**
+**Step 2 — register with your MCP client (Claude Code shown as the example)**
 
 ```powershell
 claude mcp add dsh `
@@ -89,6 +89,10 @@ claude mcp add dsh `
 
 claude mcp list                    # confirm "dsh" is listed
 ```
+
+This is a standard MCP server — the same `dist\index.js` also works with
+OpenAI Codex, Cursor, VS Code and any other MCP client (see
+[Deployment](#deployment)).
 
 **Step 3 — restart Claude Code, then make your first delegation**
 
@@ -116,6 +120,11 @@ seconds. DSH runs in **your** project root — never in the `dsh-mcp` directory.
 > · heterogeneous model setup: parent = deepseek-v4-pro on both arms, DSH =
 > deepseek-v4-flash on arm A · full breakdown:
 > [`tests/bench/bench-report.md`](tests/bench/bench-report.md)
+> · **experiment note: the Claude Code in this benchmark runs on a
+> deepseek-v4-pro kernel** (configured via the `ANTHROPIC_MODEL` env var) —
+> the parent is a DeepSeek model, not an Anthropic model, on both arms. The
+> delta is therefore exactly the plugin: the same DeepSeek parent, with vs.
+> without `dsh-mcp`
 > · dataset: [`tests/bench/tasks.mjs`](tests/bench/tasks.mjs)
 
 | | with `dsh-mcp` | raw agent |
@@ -157,9 +166,57 @@ DEEPSEEK_API_KEY=sk-... node tests\long-horizon-e2e.mjs             # multi-dele
 > Keys only ever enter a temp `mcp.json` inside a sandbox, deleted on exit —
 > never written to the repo, never printed.
 
-## Configuration
+## Tools
 
-### Option A — register with Claude Code (recommended)
+One tool family, split by responsibility so the parent agent picks by intent
+(tool name + description are the model's decision input):
+
+| Tool | Use it for | Constraint |
+|---|---|---|
+| `delegate_to_dsh` | generic self-contained tasks | none — everything is up to your task text |
+| `dsh_investigate` | read-only analysis: read files, trace call flows, "find where X is used" | the agent is instructed to never modify files or run side-effecting commands |
+| `dsh_fix` | modifying code: bug fixes, refactors, migrations, well-specified implementations | the agent verifies (when the task names a check) and lists every file it changed |
+| `dsh_execute` | running commands: test suites, build scripts, environment queries | the agent reports full output + exit code, leaves source files alone |
+| `dsh_status` | environment diagnostics: DSH resolution, CLI version, model config, timeout, key presence | no DSH child process, no API key required |
+
+All delegation tools share one schema: `task` (required), `cwd` (optional),
+`timeoutMs` (per-call override of `DSH_MCP_TIMEOUT_MS`) and `trackChanges`
+(default true).
+
+**Change tracking — the black box gets a tail.** DSH's headless CLI only
+returns its final message: no diff, no file list. Every delegation therefore
+snapshots your workspace before and after and appends a `[mcp]` block to the
+result, so the parent can see what the delegation actually touched:
+
+```text
+<DSH final output>
+
+[mcp] exitCode: 0
+[mcp] durationMs: 45210
+[mcp] cwd: D:\workspace\foo
+[mcp] changedFiles: 2
+[mcp]   M src/store.js      (modified)
+[mcp]   A src/store.test.js (added)
+```
+
+Use `trackChanges: false` (or `DSH_MCP_TRACK_CHANGES=0`) to skip snapshots on
+very large repositories. Dependency/build dirs (`node_modules`, `.git`,
+`dist`, `build`, `coverage`, …) and hidden dirs are always excluded.
+
+> Category constraints are enforced via task templates, not the CLI — DSH's
+> headless mode has no read-only flag. Change tracking is the safety net: if
+> `dsh_investigate` did modify something anyway, the `[mcp] changedFiles`
+> list exposes it and the parent can check the files itself.
+
+## Deployment
+
+`dsh-mcp` is a **standard MCP stdio server**. Nothing in it is
+Claude-Code-specific: any client that speaks MCP can host it — Claude Code,
+OpenAI Codex, Cursor, VS Code, Claude Desktop, or your own tooling. Claude
+Code is simply the client we validated end-to-end. The server and the `dsh`
+tool family are identical everywhere; only the registration step differs.
+
+### Claude Code (one command — the example)
 
 ```powershell
 claude mcp add dsh `
@@ -170,8 +227,29 @@ claude mcp add dsh `
 claude mcp list
 ```
 
-> Any other MCP client can use the same server — point it at
-> `dist\index.js` with the same env vars. Example project-level config:
+### OpenAI Codex
+
+Codex loads MCP servers from its config at `%USERPROFILE%\.codex\config.toml`
+(project-level: `.codex\config.toml`). Append:
+
+```toml
+[mcp_servers.dsh]
+command = "node"
+args = ["D:\\path\\to\\dsh-mcp\\dist\\index.js"]
+env = { DEEPSEEK_API_KEY = "sk-..." }
+```
+
+Restart `codex`, then just ask — e.g. "Use the dsh_investigate tool to read
+the README and package.json and report the project name." Codex cannot see
+inside DSH (it is a black box to the host), which is exactly why every
+delegation returns the `[mcp] changedFiles` block — the parent learns what
+the delegation touched even when the host is not Claude Code.
+
+### Any other MCP client
+
+Point your client at `dist\index.js` with the same env vars. Most clients
+accept a JSON `mcpServers` block (Claude Code project-level config, Cursor
+`mcp.json`, VS Code, Claude Desktop, …):
 
 ```json
 {
@@ -234,13 +312,15 @@ claude mcp add dsh `
 | `CLI build artifact is missing` | In the DSH checkout: `pnpm install && pnpm run build` |
 | `DEEPSEEK_API_KEY is not configured` | Re-add with `--env DEEPSEEK_API_KEY=...`, restart Claude Code |
 | Wrong workspace | Resolution: tool `cwd` → `CLAUDE_PROJECT_DIR` → `MCP_WORKSPACE_DIR` → server cwd |
+| Delegation fails, can't tell why | Run `dsh_status` first — it reports DSH resolution, CLI version, model config, timeout and key presence |
 
 ## How to delegate
 
-`delegate_to_dsh` takes one `task` argument. Every call spawns a **brand-new**
-DSH agent that runs in your project workspace and returns its final result.
-DSH has no memory across calls — that's the design (no session to corrupt) —
-and it sets the one rule that matters:
+Every delegation tool takes one `task` argument (see [Tools](#tools) for
+the full family). Each call spawns a **brand-new** DSH agent that runs in
+your project workspace and returns its final result. DSH has no memory
+across calls — that's the design (no session to corrupt) — and it sets the
+one rule that matters:
 
 > **Make every delegation self-contained.** Give DSH everything the subtask
 > needs: the file paths, the context, the expected result. Never write
@@ -313,7 +393,10 @@ DSH:   Found it: src/auth/session.js:37 catches the error and returns null
 Early development ran on **deepseek-v4-flash** for parent and DSH alike; the
 100-task benchmark above runs the heterogeneous combo **parent =
 deepseek-v4-pro[1m], DSH = deepseek-v4-flash** (arm B uses the same pro parent
-without the plugin, so the delta is the plugin). The architecture is the point:
+without the plugin, so the delta is the plugin). The Claude Code kernel in
+the benchmark is DeepSeek's model — `ANTHROPIC_MODEL: deepseek-v4-pro[1m]`
+— not an Anthropic model; the parent-side claim below assumes a strong
+parent regardless of vendor. The architecture is the point:
 the parent's per-turn token spend stays tiny (pure reasoning), while
 token-heavy work runs on the DSH side at DeepSeek pricing.
 
@@ -335,7 +418,7 @@ parent and re-run the same suite to verify.*
 
 | Layer | Coverage | Status |
 | --- | --- | --- |
-| Unit | 23 vitest (DSH discovery / workspace / runner) | ✅ |
+| Unit | 42 vitest (DSH discovery / workspace / runner / change tracking / tools) | ✅ |
 | Real E2E (Claude Code) | subdir launch · Chinese · spaces in path · real API | ✅ |
 | Long-horizon | plan → investigate → decide → fix → read-back → verify | ✅ 5/5 |
 | A/B benchmark | 100 tasks × 2 arms (accuracy + runtime, p<0.001) | ✅ |

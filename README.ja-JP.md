@@ -85,7 +85,7 @@ npm install
 npm run build                      # → dist\index.js
 ```
 
-**ステップ 2 — Claude Code に登録**
+**ステップ 2 — お使いの MCP クライアントに登録（例として Claude Code）**
 
 ```powershell
 claude mcp add dsh `
@@ -95,6 +95,10 @@ claude mcp add dsh `
 
 claude mcp list                    # 一覧に "dsh" があることを確認
 ```
+
+これは標準の MCP サーバーです——同じ `dist\index.js` が OpenAI Codex、
+Cursor、VS Code など、あらゆる MCP クライアントでも動きます
+（[デプロイ](#デプロイ) を参照）。
 
 **ステップ 3 — Claude Code を再起動し、最初の委譲を実行**
 
@@ -121,6 +125,10 @@ Claude が `delegate_to_dsh` を呼び出し、数秒で答えが返ってきま
 > ground-truth 検証（実行アサーション + stdout チェック；clean fixture は必ず
 > FAIL、参考修正は必ず PASS）· ヘテロジニアス構成：両群の親 = deepseek-v4-pro、
 > A 群の DSH = deepseek-v4-flash
+> · **実験ノート：このベンチマークの Claude Code は deepseek-v4-pro カーネル
+> で動いています**（`ANTHROPIC_MODEL` 環境変数で設定）——両群の親は DeepSeek
+> モデルであり、Anthropic モデルではありません。つまり差分はまさにプラグ
+> インそのもの：同じ DeepSeek 親モデルで、プラグインあり vs なし
 > · 完全な詳細：[`tests/bench/bench-report.md`](tests/bench/bench-report.md)
 > · タスクセット：[`tests/bench/tasks.mjs`](tests/bench/tasks.mjs)
 
@@ -163,9 +171,58 @@ DEEPSEEK_API_KEY=sk-... node tests\long-horizon-e2e.mjs       # 複数委譲ル�
 > キーはサンドボックス内の一時 `mcp.json` にのみ置かれ、終了時に削除されます——
 > リポジトリに書き込まれることも、出力されることもありません。
 
-## 設定
+## ツール
 
-### 方法 A — Claude Code への登録（推奨）
+責務ごとに分類したツール群——親エージェントが意図に合わせて正確に
+選べます（ツール名と説明こそがモデルの判断材料です）：
+
+| ツール | 何に使うか | 制約 |
+|---|---|---|
+| `delegate_to_dsh` | 汎用の自己完結タスク | なし——すべて task 文次第 |
+| `dsh_investigate` | 読み取り専用の調査：ファイル閲覧、呼び出し経路の追跡、「X がどこから使われているか」 | ファイルを変更せず、副作用のあるコマンドを実行しないよう指示 |
+| `dsh_fix` | コードの変更：バグ修正、リファクタリング、移行、明確に仕様化された実装 | 変更後は検証し（タスクが検査コマンドを指定している場合）、変更した全ファイルを列挙 |
+| `dsh_execute` | コマンド実行：テストスイート、ビルドスクリプト、環境確認 | 完全な出力と終了コードを報告し、ソースは触らない |
+| `dsh_status` | 環境診断：DSH 解決、CLI バージョン、モデル設定、タイムアウト、キーの有無 | DSH 子プロセスを起動せず、API キーも不要 |
+
+委譲系ツールは共通のスキーマ：`task`（必須）、`cwd`（任意）、`timeoutMs`
+（呼び出し単位で `DSH_MCP_TIMEOUT_MS` を上書き）、`trackChanges`（既定で on）。
+
+**変更追跡——ブラックボックスに尻尾が付く。** DSH headless は最終メッセージ
+しか返しません：diff もファイル一覧もありません。そこで委譲の前後で
+ワークスペースをスナップショットし、結果の末尾に `[mcp]` ブロックを
+付けて、親が委譲で実際に触れたファイルを確認できるようにします：
+
+```text
+<DSH の最終出力>
+
+[mcp] exitCode: 0
+[mcp] durationMs: 45210
+[mcp] cwd: D:\workspace\foo
+[mcp] changedFiles: 2
+[mcp]   M src/store.js      (modified)
+[mcp]   A src/store.test.js (added)
+```
+
+巨大リポジトリでは `trackChanges: false`（または `DSH_MCP_TRACK_CHANGES=0`）
+でスナップショットを省けます。依存/ビルドディレクトリ（`node_modules`、
+`.git`、`dist`、`build`、`coverage` など）と隠しディレクトリは常に
+スナップショットから除外されます。
+
+> 分類の制約はタスクテンプレートで適用されます（CLI レベルではありません
+> ——DSH headless には読み取り専用フラグがありません）。変更追跡がセーフ
+> ティネットです：万一 `dsh_investigate` が何かを変更してしまっても、
+> `[mcp] changedFiles` が違反を暴き、親が自分で確認できます。
+
+## デプロイ
+
+`dsh-mcp` は**標準の MCP stdio サーバー**です。特定のクライアントに
+縛るものは何もありません：MCP を話せるクライアントならどれでも
+ホストできます——Claude Code、OpenAI Codex、Cursor、VS Code、
+Claude Desktop、あるいは自作ツール。Claude Code は私たちがエンドツー
+エンドで検証したクライアントにすぎません。サーバーと `dsh` ツール群は
+どのクライアントでもまったく同じで、登録手順だけが違います。
+
+### Claude Code（1 コマンド——例）
 
 ```powershell
 claude mcp add dsh `
@@ -176,8 +233,30 @@ claude mcp add dsh `
 claude mcp list
 ```
 
-> 他の MCP クライアントでも同じサーバーをそのまま使えます——`dist\index.js` を
-> 指し、同じ環境変数を設定してください。プロジェクトレベルの設定例：
+### OpenAI Codex
+
+Codex は `%USERPROFILE%\.codex\config.toml` から MCP サーバーを読み込みます
+（プロジェクトレベル：`.codex\config.toml`）。追記：
+
+```toml
+[mcp_servers.dsh]
+command = "node"
+args = ["D:\\path\\to\\dsh-mcp\\dist\\index.js"]
+env = { DEEPSEEK_API_KEY = "sk-..." }
+```
+
+`codex` を再起動して、そのまま頼んでください——例：「dsh_investigate
+ツールで README と package.json を読み、プロジェクト名を報告して」。
+Codex は DSH の内部を見られません（ホストにとって DSH はブラックボックス
+です）——だからこそ、すべての委譲は `[mcp] changedFiles` ブロックを
+返します：ホストが Claude Code でなくても、親は委譲が何に触れたかを
+知ることができます。
+
+### その他の MCP クライアント
+
+`dist\index.js` を指し、同じ環境変数を設定してください。多くのクライアント
+は JSON 形式の `mcpServers` 設定を受け付けます（Claude Code の
+プロジェクトレベル設定、Cursor の `mcp.json`、VS Code、Claude Desktop など）：
 
 ```json
 {
@@ -240,14 +319,15 @@ claude mcp add dsh `
 | `CLI build artifact is missing` | DSH checkout で `pnpm install && pnpm run build` |
 | `DEEPSEEK_API_KEY is not configured` | `--env DEEPSEEK_API_KEY=...` を付けて再登録し、Claude Code を再起動 |
 | ワークスペースが違う | 解決順：ツール `cwd` → `CLAUDE_PROJECT_DIR` → `MCP_WORKSPACE_DIR` → サーバー cwd |
+| 委譲が失敗して原因が分からない | まず `dsh_status` を実行——DSH 解決、CLI バージョン、モデル設定、タイムアウト、キーの有無を報告します |
 
 ## 委譲のしかた
 
-`delegate_to_dsh` は `task` 引数をひとつ取ります。呼び出しのたびに**真新しい**
-DSH エージェントが起動し、あなたのワークスペースで実行されて、最終結果を
-返します。DSH は呼び出しをまたいだ**記憶を持ちません**——これが設計です
-（汚染されるセッションが存在しない）——そして、それこそが唯一の鉄則を
-決めます：
+委譲系ツールはどれも `task` 引数をひとつ取ります（完全なツール群は
+[ツール](#ツール) を参照）。呼び出しのたびに**真新しい** DSH エージェントが
+起動し、あなたのワークスペースで実行されて、最終結果を返します。DSH は
+呼び出しをまたいだ**記憶を持ちません**——これが設計です（汚染される
+セッションが存在しない）——そして、それこそが唯一の鉄則を決めます：
 
 > **すべての委譲は自己完結に。** サブタスクに必要なものをすべて DSH に
 > 渡してください：ファイルパス、コンテキスト、期待する結果。
@@ -323,7 +403,11 @@ DSH:    見つけました：src/auth/session.js:37 がエラーを捕捉して 
 初期開発は **deepseek-v4-flash** で行われました（親エージェントも DSH も同様）。
 上の 100 タスク benchmark はヘテロジニアス構成 **親 = deepseek-v4-pro[1m]、
 DSH = deepseek-v4-flash** で実行しています（B 群は同じ pro 親モデルを
-プラグインなしで使用——差はプラグインそのもの）。アーキテクチャこそが要点です：
+プラグインなしで使用——差はプラグインそのもの）。benchmark 内の Claude Code
+カーネルは DeepSeek のモデルです（`ANTHROPIC_MODEL: deepseek-v4-pro[1m]`）——
+Anthropic モデルではありません。以下の親エージェントの主張は「親が十分に
+強い」ことだけを仮定しており、ベンダーには依存しません。
+アーキテクチャこそが要点です：
 親の毎ターンのトークン消費は最小限（純粋な推論のみ）に保たれ、トークン集約的な
 作業は DSH 側で DeepSeek 価格により実行されます。
 
@@ -344,7 +428,7 @@ DSH = deepseek-v4-flash** で実行しています（B 群は同じ pro 親モ�
 
 | レイヤー | カバレッジ | 状態 |
 | --- | --- | --- |
-| ユニットテスト | 23 件の vitest（DSH 検出 / workspace / runner） | ✅ |
+| ユニットテスト | 42 件の vitest（DSH 検出 / workspace / runner / 変更追跡 / ツール群） | ✅ |
 | 実 E2E（Claude Code） | サブディレクトリ起動 · 中国語 · パスにスペース · 実 API | ✅ |
 | 長期タスク | 計画 → 調査 → 診断 → 修正 → 読み返し → 検証 | ✅ 5/5 |
 | A/B benchmark | 100 タスク × 2 群（正解率 + runtime、p<0.001） | ✅ |

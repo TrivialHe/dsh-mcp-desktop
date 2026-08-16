@@ -17,6 +17,8 @@ import { spawn, spawnSync } from 'node:child_process'
 export interface DshRunRequest {
   task: string
   cwd: string
+  /** Per-call timeout in ms; overrides the runner's configured default. */
+  timeoutMs?: number
 }
 
 export interface DshRunResult {
@@ -64,6 +66,7 @@ export class CliDshRunner implements DshRunner {
   }
 
   async run(request: DshRunRequest): Promise<DshRunResult> {
+    const timeoutMs = request.timeoutMs ?? this.timeoutMs
     const child = spawn(
       process.execPath,
       [this.cliPath, '--profile', 'headless', request.task],
@@ -95,7 +98,7 @@ export class CliDshRunner implements DshRunner {
     // Timeout: terminate the child, then force-kill the process tree on
     // Windows if it does not die within a grace period (§31).
     let timer: NodeJS.Timeout | undefined
-    if (this.timeoutMs > 0) {
+    if (timeoutMs > 0) {
       timer = setTimeout(() => {
         child.kill()
         if (process.platform === 'win32') {
@@ -109,7 +112,7 @@ export class CliDshRunner implements DshRunner {
             }
           }, 1500)
         }
-      }, this.timeoutMs)
+      }, timeoutMs)
     }
 
     try {

@@ -19,7 +19,7 @@ V0.1 / V0.2 不追求“大而全”。
 - 本地已有可运行的 DeepSeek Harness 源码；
 - Claude Code 作为首个验证 Host；
 - stdio MCP；
-- 一个核心 Tool：`delegate_to_dsh`；
+- 工具门类：`delegate_to_dsh` + `dsh_investigate` / `dsh_fix` / `dsh_execute` / `dsh_status`（§15）；
 - 用户只需要提供 `DEEPSEEK_API_KEY`；
 - DSH 与 `dsh-mcp` 采用约定目录布局时，不要求额外填写 `DSH_ROOT`；
 - 可以从一个**独立测试项目，甚至其子目录中启动 Claude Code**，验证 DSH 最终工作目录是否正确。
@@ -614,13 +614,24 @@ D:\dev\dsh-mcp
 
 # 15. MCP Tool 设计
 
-V0.x 只做一个：
+V0.2 按职责拆成**工具门类**。单一 `delegate_to_dsh` 让父代理无从选择；
+工具名 + description 本身就是模型的决策依据（§16），门类化让模型按
+意图精确选择。
 
 ```text
-delegate_to_dsh
+delegate_to_dsh   通用门类：完全自包含的自定义任务（无约束前缀，向后兼容）
+dsh_investigate   只读调查门类：读文件、搜索、分析、报告（任务模板强制不改文件）
+dsh_fix           修改门类：修 bug / 重构 / 迁移 / 实现，改完跑验证并列出改动文件
+dsh_execute       执行门类：跑命令（测试 / 脚本 / 环境查询），报告输出与退出码
+dsh_status        诊断门类：健康检查（不启动 DSH 子进程，§29）
 ```
 
-Schema：
+**能力边界**：DSH headless CLI 没有只读 / 执行模式 flag（
+`--profile headless --help` 只有 `-h`）。因此 investigate / fix / execute
+的约束通过**任务模板前缀**（prompt 级）落地，而非 CLI 层强制；违约由
+变更追踪兜底（§23a）。
+
+委派类工具共用 Schema（`dsh_status` 无参数）：
 
 ```ts
 {
@@ -637,8 +648,38 @@ Schema：
     .describe(
       "Optional absolute workspace path. Usually omit this when running from Claude Code."
     ),
+
+  timeoutMs: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe(
+      "Per-call timeout in milliseconds; overrides DSH_MCP_TIMEOUT_MS for this call."
+    ),
+
+  trackChanges: z
+    .boolean()
+    .optional()
+    .describe(
+      "Snapshot the workspace before and after the delegation and report which files changed. Defaults to true."
+    ),
 }
 ```
+
+成功返回 = DSH 输出 + 尾部 `[mcp]` 元数据块（黑盒的"白盒尾巴"）：
+
+```text
+[mcp] exitCode: 0
+[mcp] durationMs: 45210
+[mcp] cwd: D:\workspace\foo
+[mcp] changedFiles: 2
+[mcp]   M src/store.js      (modified)
+[mcp]   A src/store.test.js (added)
+```
+
+父代理（尤其 Codex 这类黑盒宿主）由此感知耗时、退出码、以及 DSH 到底
+动了哪些文件。
 
 ---
 
@@ -748,6 +789,8 @@ server.json
 export interface DshRunRequest {
   task: string;
   cwd: string;
+  /** Per-call timeout in ms; overrides the runner's configured default. */
+  timeoutMs?: number;
 }
 
 export interface DshRunResult {
@@ -896,6 +939,27 @@ status polling
 mailbox
 progress event
 ```
+
+例外：`dsh_status` 是**同步**诊断工具——一次调用立即返回环境状态，
+不轮询、无进度事件，不属于上表；它不启动 DSH 子进程，也不要求
+API key（key 缺失时它是唯一能跑的诊断工具，§29）。
+
+# 23a. 变更追踪（黑盒可观测性）
+
+问题：DSH headless 只回最终消息文本，不回 diff、不回变更清单。父代理
+（尤其 Codex）无法得知委派是否改坏了文件。
+
+方案（纯适配器侧，不依赖 DSH）：
+
+- 委派前 `snapshotWorkspace(workspace)`：递归 sha1 文件内容，跳过
+  `node_modules` / `.git` / `dist` / `build` / `coverage` / `.venv` /
+  `__pycache__` / `.dsh` / 隐藏目录；单个文件读取失败跳过（不炸委派）。
+- 委派后再次快照 → `diffSnapshots` → `[mcp] changedFiles` 列表（
+  `A` added / `M` modified / `D` deleted，路径升序）。
+- `trackChanges: false` 或 `DSH_MCP_TRACK_CHANGES=0` 可关闭（大仓库
+  性能兜底，默认开）。
+- 这是**检测**层：只读门类的 prompt 约束被违约时，父代理至少能看到
+  变更清单，自行 Read 检查。要拿到 diff 内容需 DSH 输出，超 V0 范围。
 
 ---
 
@@ -1167,41 +1231,34 @@ D:\dev\Test Project With Spaces\
 
 ---
 
-# 29. 建议增加一个开发诊断 Tool 吗？
+# 29. 诊断 Tool：dsh_status
 
-**不建议正式暴露。**
+V0.2 起**正式暴露** `dsh_status`（V0.1 曾认为不应正式暴露诊断工具，
+但真实使用暴露了需求：委派失败 / 环境可疑时，父代理需要一个零副作用、
+不依赖 API key 的自检入口——尤其 Codex 这类黑盒宿主，`DSH_MCP_DEBUG`
+的 stderr 输出它们根本看不见）。
 
-可以在测试环境中临时加一个：
-
-```text
-debug_environment
-```
-
-返回：
+返回（纯静态，不启动 DSH 子进程）：
 
 ```text
-resolved dshRoot
-resolved workspaceRoot
-resolved dshCliPath
+DSH: found
+  root: ...\@deepseek-ai\dsh
+  cli:  ...\lib\bin.js
+  version: rc.6            (node <cli> -V，失败则 "unknown")
+  model: provider=deepseek-official model=deepseek-v4-flash reasoningEffort=max
+                           (行扫描 ~/.dsh/settings.yaml，不引 yaml 依赖)
+workspace: D:\...
+timeout: 0 (no timeout)    (读 DSH_MCP_TIMEOUT_MS)
+apiKey: configured         (只报 configured/missing，绝不打印 key，§17)
 ```
 
-但正式 V0.x release 应删除。
+设计要点：
 
-更好的方案是用：
-
-```text
-DSH_MCP_DEBUG=1
-```
-
-时通过 stderr 输出：
-
-```text
-[dsh-mcp] dshRoot=...
-[dsh-mcp] workspaceRoot=...
-[dsh-mcp] cli=...
-```
-
-既方便 Windows 调试，也不会污染 MCP stdout。
+- **不要求 API key**：key 缺失时其他工具全部报错，`dsh_status` 是唯一
+  能跑的诊断入口，因此 key 检查对它豁免。
+- **零副作用**：不 spawn DSH，只 resolve + 读配置文件 + 一次 `-V`。
+- `DSH_MCP_DEBUG=1` 的 stderr 输出（dshRoot / workspaceRoot / cli）保留，
+  作为进程级辅助，不取代工具。
 
 ---
 
