@@ -2,13 +2,13 @@
 
 # dsh-mcp ⚡
 
-### 别为读文件付旗舰模型的钱。
+### 快和便宜——重活跑在 deepseek-v4-flash 上。
 
 ### 给 MCP 智能体的廉价高速执行层 —— 由本地 DeepSeek Harness 驱动。
 
-智能体编程工具之所以又贵又慢，只有一个原因：它让旗舰模型一个一个地读文件。
+智能体编程工具之所以又贵又慢，只有一个原因：它让父模型一个一个地读文件。
 `dsh-mcp` 把这个过程翻过来——**父代理保留推理，本地 DeepSeek Harness 干重活**：
-批量读文件、改文件、跑命令，按 DeepSeek 计价，跑在你的机器上。
+批量读文件、改文件、跑命令，按 deepseek-v4-flash 计价，跑在你的机器上。
 
 ![Platform: Windows 11](https://img.shields.io/badge/Platform-Windows_11-0078d4)
 ![Protocol: MCP stdio](https://img.shields.io/badge/Protocol-MCP_stdio-8A2BE2)
@@ -25,8 +25,8 @@
 ## 为什么：快和便宜，是设计使然
 
 **先说问题。** 长程、多文件任务，最能让智能体工具又费钱又费时间。Codex、Claude
-Code 的做法，是让旗舰模型亲自啃完每个文件：一个文件一次 `Read`，反复探索，
-上下文越滚越大，越到后面越抓不住重点。**读文件**按旗舰模型的单价收费，而且模型
+Code 的做法，是让父模型亲自啃完每个文件：一个文件一次 `Read`，反复探索，
+上下文越滚越大，越到后面越抓不住重点。**读文件**按父模型的单价收费，而且模型
 是**一个个**地读——钱和时间一起烧。
 
 **我们的做法。** 一次 `delegate_to_dsh` 调用，把最费 token 的那部分子任务，整个
@@ -43,7 +43,7 @@ DSH = deepseek-v4-flash；B 组用同一个父模型但不装插件）：
 | **统计显著性** | — | Fisher p < 0.001 |
 
 更快、更准——而且正确率差距现在是**统计显著**的（n=100 时 p = 3.7×10⁻⁴，
-不再只是方向性结论）。最烧钱的读取动作，不再占用旗舰模型。
+不再只是方向性结论）。最烧钱的读取动作，跑在 deepseek-v4-flash 上。
 [完整报告](tests/bench/bench-report.md) · [自己复现](#benchmark-报告)
 
 ## 工作原理
@@ -53,9 +53,8 @@ DSH = deepseek-v4-flash；B 组用同一个父模型但不装插件）：
 *生成这张图用的提示词在
 [`docs/architecture-image-prompt.md`](docs/architecture-image-prompt.md)。*
 
-- **不是 Claude Code 专属。** `dsh-mcp` 是标准 MCP stdio 服务端，任何会说 MCP
-  的客户端都能用——Claude Code 只是我们做过端到端验证的那个客户端（真实 API
-  调用、子目录启动、中文、路径含空格）。
+- **标准 MCP stdio 服务端。** 任何会说 MCP 的客户端都能用——Claude Code 是
+  我们做过端到端验证的客户端（真实 API 调用、子目录启动、中文、路径含空格）。
 - **父代理模型。** 每次委派是一个自包含子任务；DSH 是无状态工人（每次调用全新
   进程——没有会被污染的会话）。
 - **零配置，开箱即用。** DSH CLI 自动发现（环境变量覆盖 → 兄弟 checkout →
@@ -189,11 +188,10 @@ DEEPSEEK_API_KEY=sk-... node tests\long-horizon-e2e.mjs             # 多轮委�
 
 ## 部署
 
-`dsh-mcp` 是**标准 MCP stdio 服务端**。没有任何东西绑定某个具体客户端：
-任何会说 MCP 的客户端都能接——Claude Code、OpenAI Codex、Cursor、
-VS Code、Claude Desktop，或你自己的工具。Claude Code 只是我们做过端到端
-验证的那个客户端。服务端与 `dsh` 工具门类在任何客户端下完全一致，只有
-注册这一步不同。
+`dsh-mcp` 是**标准 MCP stdio 服务端**。任何会说 MCP 的客户端都能接——
+Claude Code、OpenAI Codex、Cursor、VS Code、Claude Desktop，或你自己的
+工具。服务端与 `dsh` 工具门类在任何客户端下完全一致，只有注册这一步
+不同。Claude Code 是我们做过端到端验证的客户端。
 
 ### Claude Code（一条命令——示例）
 
@@ -360,26 +358,18 @@ DSH:  找到了：src/auth/session.js:37 捕获错误后返回 null 而没有重
 
 ## 成本模型
 
-早期开发在 **deepseek-v4-flash** 上完成（父代理与 DSH 皆是）；上面的 100 题
-benchmark 跑的是异构组合 **父 = deepseek-v4-pro[1m]、DSH = deepseek-v4-flash**
-（B 组用同一个 pro 父模型但不装插件，所以差距就是插件本身）。benchmark
-里的 Claude Code 内核是 DeepSeek 的模型（`ANTHROPIC_MODEL: deepseek-v4-pro[1m]`），
-不是 Anthropic 模型；下面的父代理结论只假设"父代理足够强"，与厂商无关。
-架构就是重点：
-父代理每轮 token 消耗保持极小（纯推理），token 密集的工作在 DSH 侧按
-DeepSeek 计价完成。
+快和便宜，都来自 DSH 侧跑的那个模型——**deepseek-v4-flash**。早期开发全部
+在 flash 上完成（父代理与 DSH 皆是）；上面的 100 题 benchmark 跑的是异构
+组合 **父 = deepseek-v4-pro[1m]、DSH = deepseek-v4-flash**（B 组用同一个
+pro 父模型但不装插件，所以差距就是插件本身）。benchmark 里的 Claude Code
+内核是 DeepSeek 的模型（`ANTHROPIC_MODEL: deepseek-v4-pro[1m]`），不是
+Anthropic 模型；下面的结论只假设"父代理足够强"，与厂商无关。
 
-这正是把父代理换成旗舰模型（如 Claude Fable 5 / Sonnet 5）后依然**更快、更省钱**
-的原因：
-
-- **更快** —— benchmark 中裸组的全部失败都是推理失败；更强的父代理一次推理
-  到位而非反复重试，且 DSH 侧工作量不变。
-- **更省钱** —— 父代理的 token 预算已被委派压到最小，即使单价更高，总量也
-  小于裸 agent 为文件读取和探索循环付出的全额 token。
+- **更快** —— token 密集的子任务（读文件、探索循环）在 DSH 里批量完成，而不是
+  在父代理会话里串行执行；实测平均耗时 −36%（76.5s vs 120.2s）。
+- **更便宜** —— 重活的 token 按 deepseek-v4-flash 计价，父代理的 token 预算
+  已被委派压到最小（纯推理）。
 - **零迁移** —— `delegate_to_dsh` 端到端模型无关。
-
-*旗舰模型的结论基于架构分析 + benchmark 数据推断；换父代理后用同一套
-benchmark 复测即可验证。*
 
 ## 已验证
 

@@ -2,14 +2,14 @@
 
 # dsh-mcp ⚡
 
-### Stop paying flagship-model prices for file reads.
+### Fast and cheap — the heavy work runs on deepseek-v4-flash.
 
-### A cheap, fast execution layer for MCP agents — powered by a local DeepSeek Harness.
+### An execution layer for MCP agents — powered by a local DeepSeek Harness.
 
-Agentic coding tools are expensive and slow for one reason: they let a
-flagship model read files one by one. `dsh-mcp` flips that — **the parent agent
-keeps the reasoning, the local DeepSeek Harness does the heavy lifting**:
-batch reads, edits, and command runs, at DeepSeek pricing, on your machine.
+Agentic coding tools are expensive and slow for one reason: the parent model
+reads files one by one. `dsh-mcp` flips that — **the parent agent keeps the
+reasoning, the local DeepSeek Harness does the heavy lifting**: batch reads,
+edits, and command runs, priced at deepseek-v4-flash rates, on your machine.
 
 ![Platform: Windows 11](https://img.shields.io/badge/Platform-Windows_11-0078d4)
 ![Protocol: MCP stdio](https://img.shields.io/badge/Protocol-MCP_stdio-8A2BE2)
@@ -26,15 +26,16 @@ batch reads, edits, and command runs, at DeepSeek pricing, on your machine.
 ## Why: fast and cheap, by design
 
 **The pain.** Long-horizon, multi-file work is where agentic tools bleed money
-and time. Codex and Claude Code do it by letting the flagship model grind
-through every file itself: one `Read` per file, exploration loops, context
-that grows and drifts. You pay flagship per-token rates for the *reading*, and
-you wait for the model to do it *serially*.
+and time: the parent model grinds through every file itself — one `Read` per
+file, exploration loops, context that grows and drifts. You pay the parent's
+per-token rates for the *reading*, and you wait for the model to do it
+*serially*.
 
 **The fix.** One `delegate_to_dsh` call hands the whole token-heavy subtask to
-a fresh, focused DeepSeek Harness agent running inside your workspace. All the
-file I/O happens there — batched, local, cheap. The parent stays in the loop
-for what actually needs a brain: **planning, diagnosis, decisions, verification**.
+a fresh, focused DeepSeek Harness agent running **deepseek-v4-flash** inside
+your workspace. All the file I/O happens there — batched, local, cheap. The
+parent stays in the loop for what actually needs a brain: **planning,
+diagnosis, decisions, verification**.
 
 Measured on 100 SWE-bench-style long-horizon tasks (heterogeneous model setup:
 parent = deepseek-v4-pro, DSH = deepseek-v4-flash; arm B runs the same parent
@@ -47,8 +48,8 @@ model without the plugin):
 | **Statistical significance** | — | Fisher p < 0.001 |
 
 Faster, more accurate — and the accuracy gap is now statistically significant
-(p = 3.7×10⁻⁴ at n=100), not just directional. The expensive reads moved off
-the flagship model. [Full report](tests/bench/bench-report.md) ·
+(p = 3.7×10⁻⁴ at n=100), not just directional. The expensive reads now run on
+deepseek-v4-flash. [Full report](tests/bench/bench-report.md) ·
 [Reproduce it](#benchmark)
 
 ## How it works
@@ -58,10 +59,9 @@ the flagship model. [Full report](tests/bench/bench-report.md) ·
 *The prompt used to generate this is in
 [`docs/architecture-image-prompt.md`](docs/architecture-image-prompt.md).*
 
-- **Not Claude-Code-specific.** `dsh-mcp` is a standard MCP stdio server. Any
-  client that speaks MCP can use it — Claude Code is simply the client we
-  validated end-to-end (real API calls, subdir launches, Chinese, spaces in
-  paths).
+- **A standard MCP stdio server.** Any client that speaks MCP can use it —
+  Claude Code is the client we validated end-to-end (real API calls, subdir
+  launches, Chinese, spaces in paths).
 - **Parent-agent model.** Each delegation is one self-contained subtask; DSH is
   a stateless worker (fresh process per call — no session to corrupt).
 - **Zero config, works out of the box.** The DSH CLI is auto-discovered (env override →
@@ -210,11 +210,11 @@ very large repositories. Dependency/build dirs (`node_modules`, `.git`,
 
 ## Deployment
 
-`dsh-mcp` is a **standard MCP stdio server**. Nothing in it is
-Claude-Code-specific: any client that speaks MCP can host it — Claude Code,
-OpenAI Codex, Cursor, VS Code, Claude Desktop, or your own tooling. Claude
-Code is simply the client we validated end-to-end. The server and the `dsh`
-tool family are identical everywhere; only the registration step differs.
+`dsh-mcp` is a **standard MCP stdio server**. Any client that speaks MCP can
+host it — Claude Code, OpenAI Codex, Cursor, VS Code, Claude Desktop, or your
+own tooling. The server and the `dsh` tool family are identical everywhere;
+only the registration step differs. Claude Code is the client we validated
+end-to-end.
 
 ### Claude Code (one command — the example)
 
@@ -390,29 +390,20 @@ DSH:   Found it: src/auth/session.js:37 catches the error and returns null
 
 ## Cost model
 
-Early development ran on **deepseek-v4-flash** for parent and DSH alike; the
-100-task benchmark above runs the heterogeneous combo **parent =
-deepseek-v4-pro[1m], DSH = deepseek-v4-flash** (arm B uses the same pro parent
-without the plugin, so the delta is the plugin). The Claude Code kernel in
-the benchmark is DeepSeek's model — `ANTHROPIC_MODEL: deepseek-v4-pro[1m]`
-— not an Anthropic model; the parent-side claim below assumes a strong
-parent regardless of vendor. The architecture is the point:
-the parent's per-turn token spend stays tiny (pure reasoning), while
-token-heavy work runs on the DSH side at DeepSeek pricing.
+Fast and cheap both come from the model on the DSH side: **deepseek-v4-flash**.
+Early development ran entirely on flash (parent and DSH alike); the 100-task
+benchmark above runs the heterogeneous combo **parent = deepseek-v4-pro[1m],
+DSH = deepseek-v4-flash** (arm B uses the same pro parent without the plugin,
+so the delta is the plugin). The Claude Code kernel in the benchmark is
+DeepSeek's model — `ANTHROPIC_MODEL: deepseek-v4-pro[1m]` — not an Anthropic
+one; the claims below only assume a strong parent, regardless of vendor.
 
-This is what makes a flagship parent (e.g. Claude Fable 5 / Sonnet 5) both
-**faster and cheaper** when combined with dsh-mcp:
-
-- **Faster** — every raw-arm failure in the benchmark is a reasoning failure;
-  a stronger parent reasons once instead of retrying, and DSH workload doesn't
-  change.
-- **Cheaper** — the parent's token budget is already minimized by delegation,
-  so a higher-priced model still costs less than a raw agent paying full token
-  volume for file reads and exploration loops.
+- **Faster** — token-heavy subtasks (file reads, exploration loops) run batched
+  in DSH instead of serially in the parent session; measured −36% average wall
+  time (76.5s vs 120.2s).
+- **Cheaper** — the heavy token spend runs at deepseek-v4-flash rates, and the
+  parent's token budget is minimized by delegation (pure reasoning).
 - **Zero migration** — `delegate_to_dsh` is model-agnostic end to end.
-
-*The flagship-model claim is architecture + benchmark inference; swap the
-parent and re-run the same suite to verify.*
 
 ## Verified
 
