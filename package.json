@@ -1,7 +1,7 @@
 {
-  "name": "dsh-mcp",
-  "version": "0.2.0",
-  "description": "A lightweight MCP server for delegating tasks to DeepSeek Harness.",
+  "name": "dsh-mcp-desktop",
+  "version": "0.3.0",
+  "description": "MCP bridge for visible, persistent tasks in DeepSeek Harness desktop",
   "license": "MIT",
   "type": "module",
   "bin": {
@@ -10,7 +10,15 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "desktop/bridge.mjs",
+    "desktop/web-client.mjs",
+    "desktop/server.mjs",
+    "desktop/session-plugin.mjs",
+    "desktop/install.mjs",
+    "desktop/NOTICE.md",
+    "desktop/LICENSE.dsh-subagent-mcp",
+    "README.upstream.md"
   ],
   "engines": {
     "node": ">=22.19.0"
@@ -18,15 +26,23 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "prepack": "npm run build && npm test"
+    "prepack": "npm run build && npm test",
+    "desktop:install": "node desktop/install.mjs",
+    "test:desktop": "node --test desktop/*.test.mjs",
+    "smoke:desktop": "node desktop/smoke.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2",
+    "ws": "^8.22.0",
     "zod": "^4"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
     "typescript": "^5",
     "vitest": "^3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TrivialHe/dsh-mcp-desktop.git"
   }
 }

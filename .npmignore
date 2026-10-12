@@ -1,0 +1,2 @@
+# Runtime credentials are never package contents.
+desktop/runtime/

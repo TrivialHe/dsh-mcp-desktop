@@ -1,440 +1,118 @@
-<div align="center">
+# DSH MCP Desktop
 
-# dsh-mcp ⚡
+让 Codex 在正在运行的 DeepSeek Harness 桌面端创建任务、观察实时进度，并继续同一个会话。任务出现在指定工作目录对应的分组中，沿用桌面端的模型和权限。
 
-### Fast and cheap — the heavy work runs on deepseek-v4-flash.
+本项目保留原版 headless MCP 工具，并新增桌面会话工具。想在桌面端看到任务，应使用 `dsh_desktop_*` 工具。
 
-### An execution layer for MCP agents — powered by a local DeepSeek Harness.
+## 环境要求
 
-Agentic coding tools are expensive and slow for one reason: the parent model
-reads files one by one. `dsh-mcp` flips that — **the parent agent keeps the
-reasoning, the local DeepSeek Harness does the heavy lifting**: batch reads,
-edits, and command runs, priced at deepseek-v4-flash rates, on your machine.
+- Node.js 22.19.0 或更高版本。
+- 已安装并至少启动过一次 DSH 桌面端，存在 `~/.dsh/profiles/desktop`。
+- 桌面端已配置可用模型，能够正常对话。
+- 使用 Codex 自动注册时，`codex` 命令需要在 PATH 中。
 
-![Platform: Windows 11](https://img.shields.io/badge/Platform-Windows_11-0078d4)
-![Protocol: MCP stdio](https://img.shields.io/badge/Protocol-MCP_stdio-8A2BE2)
-![License: MIT](https://img.shields.io/badge/License-MIT-blue)
+当前桌面接入已在 Windows 和 DSH 0.1.7-rc.2 环境验证。其他平台和 DSH 版本需要重新验证插件与 RPC 接口兼容性。
 
-**Works with any MCP client · tested end-to-end with Claude Code**
+## 安装
 
-**🌐 [English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja-JP.md)**
-
-</div>
-
----
-
-## Why: fast and cheap, by design
-
-**The pain.** Long-horizon, multi-file work is where agentic tools bleed money
-and time: the parent model grinds through every file itself — one `Read` per
-file, exploration loops, context that grows and drifts. You pay the parent's
-per-token rates for the *reading*, and you wait for the model to do it
-*serially*.
-
-**The fix.** One `delegate_to_dsh` call hands the whole token-heavy subtask to
-a fresh, focused DeepSeek Harness agent running **deepseek-v4-flash** inside
-your workspace. All the file I/O happens there — batched, local, cheap. The
-parent stays in the loop for what actually needs a brain: **planning,
-diagnosis, decisions, verification**.
-
-Measured on 100 SWE-bench-style long-horizon tasks (heterogeneous model setup:
-parent = deepseek-v4-pro, DSH = deepseek-v4-flash; arm B runs the same parent
-model without the plugin):
-
-| | with `dsh-mcp` | raw agent |
-|---|---|---|
-| **Accuracy** | **100/100 · 100%** | 89/100 · 89% |
-| **Avg. wall time** | **76s** | 120s |
-| **Statistical significance** | — | Fisher p < 0.001 |
-
-Faster, more accurate — and the accuracy gap is now statistically significant
-(p = 3.7×10⁻⁴ at n=100), not just directional. The expensive reads now run on
-deepseek-v4-flash. [Full report](tests/bench/bench-report.md) ·
-[Reproduce it](#benchmark)
-
-## How it works
-
-![architecture](docs/architecture.png)
-
-*The prompt used to generate this is in
-[`docs/architecture-image-prompt.md`](docs/architecture-image-prompt.md).*
-
-- **A standard MCP stdio server.** Any client that speaks MCP can use it —
-  Claude Code is the client we validated end-to-end (real API calls, subdir
-  launches, Chinese, spaces in paths).
-- **Parent-agent model.** Each delegation is one self-contained subtask; DSH is
-  a stateless worker (fresh process per call — no session to corrupt).
-- **Zero config, works out of the box.** The DSH CLI is auto-discovered (env override →
-  sibling checkout → child checkout → installed under `%USERPROFILE%\.dsh`).
-- **Windows-first.** `process.execPath` + explicit argv, `shell: false` — no
-  quoting bugs, no `.cmd` shims, spaces-in-paths just work.
-
-## Quick start
-
-**Step 1 — build once**
+在终端运行：
 
 ```powershell
-cd dsh-mcp
-npm install
-npm run build                      # → dist\index.js
+git clone https://github.com/TrivialHe/dsh-mcp-desktop.git
+cd dsh-mcp-desktop
+npm ci --ignore-scripts
+npm run build
+npm run desktop:install
 ```
 
-**Step 2 — register with your MCP client (Claude Code shown as the example)**
+安装器向桌面 profile 的 `cordis.patch.yml` 添加带标记的插件条目，保存首次修改前的 `.dsh-mcp-desktop.backup` 备份，并将 MCP 注册为 `dsh-desktop`。重复执行不会重复插入插件。
+
+完成后退出并重新打开 DSH 桌面端，再启动新的 Codex 会话。桌面端必须保持运行。不要移动已经安装的仓库目录，因为 profile 和 MCP 注册使用它的绝对路径。
+
+自定义 DSH home 或 MCP 名称：
 
 ```powershell
-claude mcp add dsh `
-  --transport stdio `
-  --env DEEPSEEK_API_KEY=sk-... `
-  -- node D:\path\to\dsh-mcp\dist\index.js
-
-claude mcp list                    # confirm "dsh" is listed
+npm run desktop:install -- --home C:/YourDSHHome --name dsh-desktop
 ```
 
-This is a standard MCP server — the same `dist\index.js` also works with
-OpenAI Codex, Cursor, VS Code and any other MCP client (see
-[Deployment](#deployment)).
-
-**Step 3 — restart Claude Code, then make your first delegation**
-
-Claude Code loads MCP servers at startup, so restart it inside any project.
-Then just ask, in plain words:
-
-> Have DSH read this project's README.md and package.json, and report the
-> project name and the first paragraph of the README. Don't read the files
-> yourself — delegate everything.
-
-You'll see Claude call `delegate_to_dsh`, and the answer comes back in
-seconds. DSH runs in **your** project root — never in the `dsh-mcp` directory.
-
-> `delegate_to_dsh` not showing up? Re-run `claude mcp list` — if the server
-> failed to start, it will report an error there. Jump to
-> [Troubleshooting](#troubleshooting).
-
-## Benchmark
-
-> 100 long-horizon, multi-file tasks in two batches (01–50: bug fixes,
-> refactors, migrations, implement-from-spec, test-driven, audit; 51–100:
-> harder — deep data flows, async races, state machines, parsers, caches,
-> cross-process state) · automated ground-truth verification (run assertions +
-> stdout checks; clean fixtures must fail, reference fixes must pass)
-> · heterogeneous model setup: parent = deepseek-v4-pro on both arms, DSH =
-> deepseek-v4-flash on arm A · full breakdown:
-> [`tests/bench/bench-report.md`](tests/bench/bench-report.md)
-> · **experiment note: the Claude Code in this benchmark runs on a
-> deepseek-v4-pro kernel** (configured via the `ANTHROPIC_MODEL` env var) —
-> the parent is a DeepSeek model, not an Anthropic model, on both arms. The
-> delta is therefore exactly the plugin: the same DeepSeek parent, with vs.
-> without `dsh-mcp`
-> · dataset: [`tests/bench/tasks.mjs`](tests/bench/tasks.mjs)
-
-| | with `dsh-mcp` | raw agent |
-|---|---|---|
-| **Accuracy** | **100/100 · 100%** | 89/100 · 89% |
-| **Avg. wall time** | **76.5s** | 120.2s |
-| **Total wall time** | 7647s | 12019s |
-| **Failures** | 0 | 11 |
-
-**What the numbers say**
-
-- **Every raw-agent failure is a "finished half" failure.** 5 of 11 are
-  cross-file jobs (renames, log migrations, util splits) where the raw agent
-  changed references but left the old file behind, or migrated 3 of 5 files;
-  5 are single-point jobs where it fixed one bug out of two, escaped 3 of 5
-  HTML chars, deduped but didn't sort. DSH verifies inside the delegation and
-  catches the leftovers before handing back.
-- **Multi-file investigation stays the biggest win** — batch "read N files +
-  analyze" in one delegation vs. file-by-file reads that lose early context.
-- **Statistically significant now.** Fisher exact test on accuracy
-  (100% vs 89%, n=100): p = 3.7×10⁻⁴ (< 0.001). The 20-task pilot was
-  directional only; at 100 tasks the gap is real.
-- **The harder batch (51–100) makes the plugin look better, not worse** —
-  arm A: 100% in both batches, avg 65s on the hard batch; arm B: 88% → 90%
-  but still leaves 11 failures overall.
-- **Honest exception** — one shared-module extraction (10) was slower through
-  DSH (multi-file rewrite round-trips). Nothing like it reappeared in the hard
-  batch.
-
-Reproduce:
+只安装桌面插件，不自动注册 Codex：
 
 ```powershell
-DEEPSEEK_API_KEY=sk-... node tests\bench\run-bench.mjs AB 01-50     # both arms, 100 tasks
-DEEPSEEK_API_KEY=sk-... node tests\bench\run-bench.mjs AB 51-100    # (range filter)
-DEEPSEEK_API_KEY=sk-... node tests\e2e-headless.mjs                 # real E2E (A/B/C/D)
-DEEPSEEK_API_KEY=sk-... node tests\long-horizon-e2e.mjs             # multi-delegation loop
+npm run desktop:install -- --no-register
 ```
 
-> Keys only ever enter a temp `mcp.json` inside a sandbox, deleted on exit —
-> never written to the repo, never printed.
-
-## Tools
-
-One tool family, split by responsibility so the parent agent picks by intent
-(tool name + description are the model's decision input):
-
-| Tool | Use it for | Constraint |
-|---|---|---|
-| `delegate_to_dsh` | generic self-contained tasks | none — everything is up to your task text |
-| `dsh_investigate` | read-only analysis: read files, trace call flows, "find where X is used" | the agent is instructed to never modify files or run side-effecting commands |
-| `dsh_fix` | modifying code: bug fixes, refactors, migrations, well-specified implementations | the agent verifies (when the task names a check) and lists every file it changed |
-| `dsh_execute` | running commands: test suites, build scripts, environment queries | the agent reports full output + exit code, leaves source files alone |
-| `dsh_status` | environment diagnostics: DSH resolution, CLI version, model config, timeout, key presence | no DSH child process, no API key required |
-
-All delegation tools share one schema: `task` (required), `cwd` (optional),
-`timeoutMs` (per-call override of `DSH_MCP_TIMEOUT_MS`) and `trackChanges`
-(default true).
-
-**Change tracking — the black box gets a tail.** DSH's headless CLI only
-returns its final message: no diff, no file list. Every delegation therefore
-snapshots your workspace before and after and appends a `[mcp]` block to the
-result, so the parent can see what the delegation actually touched:
-
-```text
-<DSH final output>
-
-[mcp] exitCode: 0
-[mcp] durationMs: 45210
-[mcp] cwd: D:\workspace\foo
-[mcp] changedFiles: 2
-[mcp]   M src/store.js      (modified)
-[mcp]   A src/store.test.js (added)
-```
-
-Use `trackChanges: false` (or `DSH_MCP_TRACK_CHANGES=0`) to skip snapshots on
-very large repositories. Dependency/build dirs (`node_modules`, `.git`,
-`dist`, `build`, `coverage`, …) and hidden dirs are always excluded.
-
-> Category constraints are enforced via task templates, not the CLI — DSH's
-> headless mode has no read-only flag. Change tracking is the safety net: if
-> `dsh_investigate` did modify something anyway, the `[mcp] changedFiles`
-> list exposes it and the parent can check the files itself.
-
-## Deployment
-
-`dsh-mcp` is a **standard MCP stdio server**. Any client that speaks MCP can
-host it — Claude Code, OpenAI Codex, Cursor, VS Code, Claude Desktop, or your
-own tooling. The server and the `dsh` tool family are identical everywhere;
-only the registration step differs. Claude Code is the client we validated
-end-to-end.
-
-### Claude Code (one command — the example)
-
-```powershell
-claude mcp add dsh `
-  --transport stdio `
-  --env DEEPSEEK_API_KEY=sk-... `
-  -- node D:\path\to\dsh-mcp\dist\index.js
-
-claude mcp list
-```
-
-### OpenAI Codex
-
-Codex loads MCP servers from its config at `%USERPROFILE%\.codex\config.toml`
-(project-level: `.codex\config.toml`). Append:
+随后在 MCP 客户端中设置 Node.js 可执行文件为启动命令，参数为仓库中 `desktop/server.mjs` 的绝对路径。Codex 配置示例：
 
 ```toml
-[mcp_servers.dsh]
+[mcp_servers.dsh-desktop]
 command = "node"
-args = ["D:\\path\\to\\dsh-mcp\\dist\\index.js"]
-env = { DEEPSEEK_API_KEY = "sk-..." }
+args = ["C:/Tools/dsh-mcp-desktop/desktop/server.mjs"]
 ```
 
-Restart `codex`, then just ask — e.g. "Use the dsh_investigate tool to read
-the README and package.json and report the project name." Codex cannot see
-inside DSH (it is a black box to the host), which is exactly why every
-delegation returns the `[mcp] changedFiles` block — the parent learns what
-the delegation touched even when the host is not Claude Code.
+将示例路径替换为自己的实际安装路径。
 
-### Any other MCP client
+## 发出任务
 
-Point your client at `dist\index.js` with the same env vars. Most clients
-accept a JSON `mcpServers` block (Claude Code project-level config, Cursor
-`mcp.json`, VS Code, Claude Desktop, …):
+可以直接对 Codex 说：
 
-```json
-{
-  "mcpServers": {
-    "dsh": {
-      "command": "node",
-      "args": ["D:\\path\\to\\dsh-mcp\\dist\\index.js"],
-      "env": { "DEEPSEEK_API_KEY": "sk-..." }
-    }
-  }
-}
-```
+> 请通过 DSH 桌面会话实现这个功能：[需求]。工作目录为 [绝对目录]，标题为 [任务名称]。使用 dsh_desktop_start 创建任务，后续调查、修改和测试沿用同一个 session_id。由你审查结果并验收。
 
-> Don't commit the key. The automation scripts delete their temp config before
-> exiting.
+继续已有任务：
 
-### Where can DSH be installed?
+> 继续 DSH 桌面会话 [session_id]，完成 [追加需求]。不要创建新会话，检查完成结果后再交付。
 
-DSH is located in exactly four places, checked in order — **the server never
-looks at `PATH`**:
+任务提交返回的是接收凭证。验收时需要等待对应请求结束，再检查 `finish_reason`、结果、代码和测试证据。不要把 `accepted: true` 当成成功完成。
 
-1. `DSH_ROOT` env var — explicit override, wins unconditionally
-2. A sibling checkout next to this package: `..\deepseek-harness`
-3. A child checkout inside this package: `.\deepseek-harness`
-4. An installed CLI package under the DSH home:
-   `%USERPROFILE%\.dsh\profiles\node_modules\@deepseek-ai\dsh`
-   (`DSH_HOME` overrides the home directory)
+## 桌面工具
 
-So you can install DSH **anywhere** — a sibling checkout, a dedicated tools
-directory, a different drive — and point `DSH_ROOT` at it. Either layout
-works: a source checkout (build its CLI first: `pnpm install && pnpm run build`)
-or an installed CLI package (`<root>\lib\bin.js`). Anything outside these four
-locations is simply not discovered; the error message tells you to set
-`DSH_ROOT`.
+| 工具 | 参数 | 用途 |
+| --- | --- | --- |
+| `dsh_desktop_start` | `cwd`、`title`、可选 `task` | 创建目录分组内的会话；返回 `session_id` 和 `workspace_id`。提供任务时还返回请求凭证。 |
+| `dsh_desktop_send` | `session_id`、`task`、`mode` | 继续同一会话。`mode` 默认 `queue`，可选 `steer`。 |
+| `dsh_desktop_status` | `session_id` | 获取运行状态、流式文本、近期事件类型和最终回复。 |
+| `dsh_desktop_wait` | `session_id`、`after_seq`、`request_id`、`seconds` | 使用提交凭证中的序号和请求 ID 等待对应请求。默认 30 秒，范围 1-60 秒。超时返回 `timeout`，不会重新发送任务。 |
+| `dsh_desktop_interrupt` | `session_id` | 请求取消该会话的执行，保留历史。随后检查状态确认是否停止。 |
+
+观察进程断开后，可再次用同一个 `session_id` 查询或追加消息。它会重新连接原会话，不会自动重发先前任务。审批和用户问题仍由桌面端处理，MCP 不会代答。
+
+原版 `delegate_to_dsh`、`dsh_investigate`、`dsh_fix`、`dsh_execute` 和 `dsh_status` 属于 headless 通道。其配置见 [上游说明](README.upstream.md)，不会作为本插件创建的桌面任务运行。
+
+## 连接与凭据
+
+桌面插件通过 DSH 的正常本机认证流程生成连接 cookie，MCP 通过回环 HTTP RPC 和 WebSocket 连接桌面服务。桌面模式不需要另外设置 `DEEPSEEK_API_KEY`，也不复制模型密钥。
+
+连接凭据和运行状态位于 `desktop/runtime/`，已从 Git 和 npm 发布文件中排除。Windows 使用当前用户 ACL，其他系统使用私有文件权限。不要分享该目录；连接 cookie 可以操作该用户的桌面会话。
+
+`session/create` 使用 `workspaceId` 绑定目录分组；`cwd` 只用于查找或创建对应工作区。新任务创建后会查询工作区成员，确认会话确实已分组。
+
+## 排障
+
+- **桌面连接不可用**：确认插件已安装，重启 DSH，检查 `desktop/runtime/desktop-plugin-health.json` 和连接文件是否生成，再重启 MCP。
+- **任务不在桌面端出现**：确认使用的是 `dsh_desktop_start`，并检查传入目录和返回的 `workspace_id`。
+- **已有其他 bridge 条目**：安装器会拒绝覆盖未受本项目标记管理的插件。保留原安装，或先移除旧条目后再安装。不要同时启用两个同名桌面插件。
+- **认证或模型错误**：先在 DSH 桌面端直接测试对话。桌面任务沿用桌面端配置；headless 配置单独排查。
+- **等待超时**：查询原会话状态，必要时继续等待同一个请求，避免再次发送同一任务。
+
+卸载时先执行 `codex mcp remove dsh-desktop`，再从桌面 profile 中移除 `BEGIN dsh-mcp-desktop` 到 `END dsh-mcp-desktop` 的完整块，重启 DSH。若安装时使用了其他 MCP 名称，使用那个名称。
+
+## 验证
 
 ```powershell
-# register with a DSH that lives in your own directory
-claude mcp add dsh `
-  --transport stdio `
-  --env DEEPSEEK_API_KEY=sk-... `
-  --env DSH_ROOT=D:\tools\deepseek-harness `
-  -- node D:\path\to\dsh-mcp\dist\index.js
+npm run build
+npm test
+npm run test:desktop
 ```
 
-### Environment variables
+桌面回归测试覆盖请求完成关联、断线后不重发、远程地址拒绝、工作区字段及分组验证。原版测试覆盖 headless 实现。
 
-| Variable | Meaning |
-| --- | --- |
-| `DEEPSEEK_API_KEY` | **Required.** Passed to DSH through the environment. |
-| `DSH_ROOT` | Optional. Point at a DSH checkout / installed CLI. |
-| `DSH_HOME` | Optional. DSH home (default `%USERPROFILE%\.dsh`). |
-| `DSH_MCP_TIMEOUT_MS` | Optional. Child timeout; **unset = no timeout**. |
-| `DSH_MCP_DEBUG=1` | stderr diagnostics (`[dsh-mcp] dshRoot=... cli=...`). |
+在已安装并启动桌面插件后，运行真实连接测试：
 
-### Troubleshooting
-
-| Symptom | Fix |
-| --- | --- |
-| `Unable to locate DeepSeek Harness` | Set `DSH_ROOT`, or install the DSH CLI (`npx @deepseek-ai/dsh`) |
-| `CLI build artifact is missing` | In the DSH checkout: `pnpm install && pnpm run build` |
-| `DEEPSEEK_API_KEY is not configured` | Re-add with `--env DEEPSEEK_API_KEY=...`, restart Claude Code |
-| Wrong workspace | Resolution: tool `cwd` → `CLAUDE_PROJECT_DIR` → `MCP_WORKSPACE_DIR` → server cwd |
-| Delegation fails, can't tell why | Run `dsh_status` first — it reports DSH resolution, CLI version, model config, timeout and key presence |
-
-## How to delegate
-
-Every delegation tool takes one `task` argument (see [Tools](#tools) for
-the full family). Each call spawns a **brand-new** DSH agent that runs in
-your project workspace and returns its final result. DSH has no memory
-across calls — that's the design (no session to corrupt) — and it sets the
-one rule that matters:
-
-> **Make every delegation self-contained.** Give DSH everything the subtask
-> needs: the file paths, the context, the expected result. Never write
-> "as above", "like before", or "that file I mentioned earlier" — DSH cannot
-> see your conversation.
-
-### Good vs. bad delegation
-
-The same task, written two ways:
-
-```text
-❌ "Fix the bug in the store module and verify."
-   — Which module? What bug? Verify how? DSH has no memory of "the" bug.
-
-✅ "In src/store.js, createOrder() (around line 42) computes the order total
-    without the tax field. Fix it so the total includes tax. Then run
-    node src/tests/order.test.js and report the output."
-   — Self-contained: file, bug, expected behavior, verification command.
+```powershell
+npm run smoke:desktop
 ```
 
-### Three templates that cover most delegations
+该测试通过 MCP 创建一个桌面会话，用两轮固定文本验证实时回复和上下文保留。它不要求读取项目文件或运行命令，使用当前终端所在目录作为测试工作区。测试会产生模型调用费用，并在桌面端保留验收会话。
 
-**1. Investigation — DSH reads the files, the parent reads the report**
+## 来源与许可证
 
-```text
-Read src/modules/a.js, b.js and c.js and report: (1) every exported
-function signature, (2) all TODO/FIXME comments with line numbers,
-(3) where each module is imported from. Don't modify anything.
-```
-
-**2. Fix + verify — the parent decides, DSH executes and checks**
-
-```text
-In src/utils.js, slugify("  hello ") returns "hello " instead of "hello"
-(leading whitespace leaks through). Fix it, then run
-node src/test/utils.test.js and report which assertions pass.
-```
-
-**3. Batch edit — one delegation instead of N read/edit round-trips**
-
-```text
-Across the project, replace every occurrence of config.port with
-config.serverPort in all .js files (skip node_modules). List each file
-you changed, one line per file.
-```
-
-### When to delegate — and when not to
-
-| Delegate (token-heavy, self-contained) | Keep with the parent (needs context) |
-|---|---|
-| Read + summarize N files | Weighing two architectures |
-| Multi-file rename / migration / refactor | Deciding what to build next |
-| Run a suite / script and report output | A debugging conversation that evolves |
-| Implement a well-specified function | Anything whose goal is still unclear |
-
-### What a delegation looks like in a session
-
-```text
-You:   The login flow is broken. Have DSH trace login.js → session.js → db.js
-       under src/auth/ and report where an error could be swallowed, with
-       line numbers. Don't read the files yourself.
-
-DSH:   Found it: src/auth/session.js:37 catches the error and returns null
-       instead of rethrowing, so login.js treats the failure as "not logged
-       in". Three files read, nothing modified.
-```
-
-## Cost model
-
-Fast and cheap both come from the model on the DSH side: **deepseek-v4-flash**.
-Early development ran entirely on flash (parent and DSH alike); the 100-task
-benchmark above runs the heterogeneous combo **parent = deepseek-v4-pro[1m],
-DSH = deepseek-v4-flash** (arm B uses the same pro parent without the plugin,
-so the delta is the plugin). The Claude Code kernel in the benchmark is
-DeepSeek's model — `ANTHROPIC_MODEL: deepseek-v4-pro[1m]` — not an Anthropic
-one; the claims below only assume a strong parent, regardless of vendor.
-
-- **Faster** — token-heavy subtasks (file reads, exploration loops) run batched
-  in DSH instead of serially in the parent session; measured −36% average wall
-  time (76.5s vs 120.2s).
-- **Cheaper** — the heavy token spend runs at deepseek-v4-flash rates, and the
-  parent's token budget is minimized by delegation (pure reasoning).
-- **Zero migration** — `delegate_to_dsh` is model-agnostic end to end.
-
-## Verified
-
-| Layer | Coverage | Status |
-| --- | --- | --- |
-| Unit | 42 vitest (DSH discovery / workspace / runner / change tracking / tools) | ✅ |
-| Real E2E (Claude Code) | subdir launch · Chinese · spaces in path · real API | ✅ |
-| Long-horizon | plan → investigate → decide → fix → read-back → verify | ✅ 5/5 |
-| A/B benchmark | 100 tasks × 2 arms (accuracy + runtime, p<0.001) | ✅ |
-| DSH write probe | headless profile can write files | ✅ |
-
-## Design & limitations (V0.x)
-
-- **Synchronous wait-for-result** — no streaming, no background, no polling
-  (ENGINEERING §0/§23). A long task is one longer MCP call; no timeout by
-  default.
-- **Stateless workers** — each delegation is a fresh DSH process (fresh startup
-  cost; fine for simple tasks).
-- **Concurrent delegations** edit the same workspace at their own risk — prefer
-  read-only / independent subtasks.
-- **Windows-first**, MIT licensed. Docs & engineering rationale:
-  [`DSH_MCP_ENGINEERING(1).md`](DSH_MCP_ENGINEERING(1).md) (§0–§40).
-
-## Disclaimer
-
-`dsh-mcp` is an independent open-source project. It is **not affiliated with,
-endorsed by, or sponsored by OpenAI, Anthropic, or DeepSeek**. DeepSeek Harness
-is DeepSeek's open-source project; this adapter merely integrates with its CLI
-over the MCP protocol. All product names and trademarks belong to their
-respective owners.
-
-## License
-
-MIT
+基于 [Mr-potato-123/dsh-mcp](https://github.com/Mr-potato-123/dsh-mcp)，参考 [dqtz5vpvj9-create/dsh-subagent-mcp](https://github.com/dqtz5vpvj9-create/dsh-subagent-mcp) 的原生会话接入方式。详细来源见 [desktop/NOTICE.md](desktop/NOTICE.md)，保留两项目的 MIT 许可证。本项目是独立社区扩展。
