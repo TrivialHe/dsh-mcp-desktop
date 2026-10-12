@@ -61,6 +61,3 @@ export class DesktopBridge {
   }
   close(){for(const s of this.sessions.values())s.client.close();this.sessions.clear();}
 }
-
-
-

@@ -8,5 +8,3 @@ test('desktop task binds to WorkspaceView.workspaceId and verifies membership',a
  const result=await b.start({cwd:'D:/example-project',title:'test'});
  assert.equal(result.workspace_id,'workspace-real');assert.equal(calls.filter(x=>x.method==='workspace/create').length,2);
 });
-
-

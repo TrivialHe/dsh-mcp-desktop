@@ -17,6 +17,3 @@ tool('dsh_desktop_wait','Wait up to 60 seconds for a turn/end newer than the sen
 tool('dsh_desktop_interrupt','Cancel the specified desktop session; does not delete its history.',id,args=>bridge.rpc('session/cancel',{request:{sessionId:args.session_id}}));
 serveStdio(()=>server);
 process.on('exit',()=>bridge.close());
-
-
-

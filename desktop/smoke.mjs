@@ -32,4 +32,3 @@ try {
   console.log('PASS: MCP desktop creation, streaming and same-session followup.');
 } catch (error) { console.error(error.message); process.exitCode = 1; }
 finally { server.stdin.end(); server.kill(); }
-
